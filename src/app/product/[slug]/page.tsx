@@ -120,7 +120,7 @@ export default function ProductPage({
           <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
             {product.figure ?? CATEGORY_LABELS[product.category]}
           </p>
-          <h1 className="font-display mt-2 text-4xl font-bold tracking-tight">{product.name}</h1>
+          <h1 className="mt-2 text-3xl font-medium tracking-tight sm:text-4xl">{product.name}</h1>
           <div className="mt-4 flex items-baseline gap-3">
             <span className="text-2xl">{formatUAH(current)}</span>
             {onSale && (

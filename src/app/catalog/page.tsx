@@ -79,7 +79,7 @@ function CatalogInner() {
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">Shop</p>
-          <h1 className="font-display mt-1 text-4xl font-bold tracking-tight">Каталог</h1>
+          <h1 className="mt-1 text-4xl font-medium tracking-tight">Каталог</h1>
           <p className="mt-2 text-muted-foreground">
             {q ? `Пошук: «${params.get("q")}» · ` : ""}
             {filtered.length} товарів

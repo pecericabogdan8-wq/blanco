@@ -3,11 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowRight } from "lucide-react";
-import { InstagramIcon } from "@/components/icons";
 import { ProductCard } from "@/components/shop/product-card";
-import { Button } from "@/components/ui/button";
 import { DEMO_MENTIONS } from "@/lib/demo-data";
+import { formatUAH } from "@/lib/format";
 import { useShopStore } from "@/store/shop-store";
 
 export default function HomePage() {
@@ -16,168 +14,112 @@ export default function HomePage() {
     () => products.filter((p) => p.featured).slice(0, 4),
     [products]
   );
+  const kuzma = products.find((p) => p.id === "p-kuzma");
+  const scarf = products.find((p) => p.id === "p-volya-scarf");
 
   return (
     <div>
-      {/* Full-bleed hero — brand first */}
-      <section className="relative min-h-[100svh] overflow-hidden grain">
-        <div className="absolute inset-0">
-          <Image
-            src="/products/shevchenko-1.svg"
-            alt="blanco — светри з українськими діячами"
-            fill
-            priority
-            className="object-cover"
-            sizes="100vw"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-ink/20" />
-        </div>
+      {/* Full-bleed hero — brand first, portfolio style */}
+      <section className="relative min-h-[100svh] overflow-hidden bg-ink">
+        <Image
+          src="/products/hero-main.webp"
+          alt="blanco lookbook"
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-black/25" />
 
-        <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-20">
-          <p className="reveal font-display text-[clamp(4.5rem,18vw,11rem)] leading-[0.85] font-extrabold tracking-tighter text-mist">
-            blanco
+        <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-end px-4 pb-16 sm:pb-20">
+          <p className="reveal font-display text-[clamp(4.5rem,16vw,9rem)] leading-none text-white">
+            Blanco
           </p>
-          <h1 className="reveal reveal-delay-1 mt-4 max-w-xl text-balance text-xl text-mist/90 sm:text-2xl">
-            Светри з обличчями тих, хто сформував Україну
-          </h1>
-          <p className="reveal reveal-delay-2 mt-3 max-w-md text-sm text-mist/65 sm:text-base">
-            Історія — на грудях. Унісекс. Зроблено в Україні.
+          <p className="reveal reveal-delay-1 mt-4 max-w-md text-center text-sm text-white/75 sm:text-base">
+            Memory on the chest. Knitted in Ukraine.
           </p>
-          <div className="reveal reveal-delay-3 mt-8 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="bg-mist text-ink hover:bg-mist/90"
-              render={<Link href="/catalog" />}
-            >
-              Дивитись каталог
-              <ArrowRight className="size-4" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-mist/40 bg-transparent text-mist hover:bg-mist/10 hover:text-mist"
-              render={
-                <a
-                  href="https://www.instagram.com/blancoone/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                />
-              }
-            >
-              <InstagramIcon className="size-4" />
-              @blancoone
-            </Button>
-          </div>
+          <Link
+            href="/catalog"
+            className="reveal reveal-delay-2 glass-cta mt-8 px-8 py-3 text-xs tracking-[0.22em] text-white uppercase transition hover:bg-white/28"
+          >
+            Shop now
+          </Link>
         </div>
       </section>
 
-      {/* Marquee */}
-      <div className="overflow-hidden border-y border-border bg-white py-3.5">
-        <div className="marquee flex w-max gap-10 whitespace-nowrap text-[11px] tracking-[0.28em] text-muted-foreground uppercase">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="flex gap-10 px-5">
-              <span>Шевченко</span>
-              <span>Леся Українка</span>
-              <span>Франко</span>
-              <span>Сковорода</span>
-              <span>Стус</span>
-              <span>Бандера</span>
-              <span>Светри · футболки · шарфи</span>
-            </div>
+      {/* Editorial split + two products — like portfolio */}
+      <section className="grid lg:grid-cols-2">
+        <div className="relative min-h-[70vh] bg-ink">
+          <Image
+            src="/products/hero-alt.webp"
+            alt="blanco editorial"
+            fill
+            className="object-cover"
+            sizes="50vw"
+          />
+        </div>
+        <div className="flex flex-col justify-center gap-10 bg-white px-6 py-14 sm:px-12 lg:px-16">
+          {[kuzma, scarf].filter(Boolean).map((p) => (
+            <Link key={p!.id} href={`/product/${p!.slug}`} className="group block max-w-sm">
+              <div className="relative aspect-[4/5] overflow-hidden bg-[#f0eee9]">
+                <Image
+                  src={p!.images[0]}
+                  alt={p!.name}
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                  sizes="(max-width:1024px) 100vw, 28vw"
+                />
+              </div>
+              <p className="mt-4 text-sm tracking-wide">{p!.name}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{formatUAH(p!.salePrice ?? p!.price)}</p>
+            </Link>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Featured shop grid */}
+      {/* Selected products */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
-              Shop
-            </p>
-            <h2 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-              Вибране
-            </h2>
-            <p className="mt-2 text-muted-foreground">Портрети, які хочеться носити</p>
-          </div>
-          <Link
-            href="/catalog"
-            className="hidden text-sm tracking-wide underline-offset-4 transition-opacity hover:underline sm:inline"
-          >
-            Увесь каталог
+          <h2 className="text-xs tracking-[0.28em] text-muted-foreground uppercase">
+            Selected products
+          </h2>
+          <Link href="/catalog" className="text-xs tracking-[0.18em] uppercase underline-offset-4 hover:underline">
+            Shop all
           </Link>
         </div>
-        <div className="product-grid grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-10">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">
           {featured.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
       </section>
 
-      {/* Category lookbook */}
-      <section className="border-y border-border bg-ink text-mist">
-        <div className="mx-auto grid max-w-7xl md:grid-cols-3">
-          {[
-            {
-              href: "/catalog?category=sweaters",
-              title: "Светри",
-              text: "Головна лінія — портрети діячів",
-              img: "/products/lesya-1.svg",
-            },
-            {
-              href: "/catalog?category=tshirts",
-              title: "Футболки",
-              text: "База з характером",
-              img: "/products/tee-trizub-1.svg",
-            },
-            {
-              href: "/catalog?category=scarves",
-              title: "Шарфи",
-              text: "Теплий акцент зими",
-              img: "/products/scarf-1.svg",
-            },
-          ].map((c) => (
-            <Link
-              key={c.href}
-              href={c.href}
-              className="group relative min-h-64 overflow-hidden border-b border-white/10 md:border-r md:border-b-0 md:last:border-r-0"
-            >
-              <Image
-                src={c.img}
-                alt={c.title}
-                fill
-                className="object-cover opacity-40 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-55"
-                sizes="33vw"
-              />
-              <div className="relative z-10 flex h-full flex-col justify-end p-8">
-                <h3 className="font-display text-3xl font-bold">{c.title}</h3>
-                <p className="mt-1 text-sm text-mist/70">{c.text}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-xs tracking-[0.16em] text-mist/80 uppercase opacity-0 transition duration-300 group-hover:opacity-100">
-                  Дивитись <ArrowRight className="size-3.5" />
-                </span>
-              </div>
-            </Link>
-          ))}
+      {/* Field lookbook strip */}
+      <section className="relative min-h-[55vh] overflow-hidden bg-ink">
+        <Image
+          src="/products/hero-field.webp"
+          alt="blanco field lookbook"
+          fill
+          className="object-cover"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-black/25" />
+        <div className="relative z-10 flex min-h-[55vh] items-end px-6 pb-10 sm:px-10">
+          <div>
+            <p className="font-display text-5xl text-white sm:text-6xl">Blanco</p>
+            <p className="mt-2 max-w-sm text-sm text-white/75">
+              Warm, grounded, intentional — the collection frames history without competing with it.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Mentions teaser */}
+      {/* Mentions */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="mb-10 flex items-end justify-between">
-          <div>
-            <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
-              Community
-            </p>
-            <h2 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-              У стрічці
-            </h2>
-            <p className="mt-2 text-muted-foreground">Відмітки з Instagram</p>
-          </div>
-          <Link
-            href="/reviews"
-            className="text-sm tracking-wide underline-offset-4 hover:underline"
-          >
-            Відгуки
+        <div className="mb-8 flex items-end justify-between">
+          <h2 className="text-xs tracking-[0.28em] text-muted-foreground uppercase">In the feed</h2>
+          <Link href="/reviews" className="text-xs tracking-[0.18em] uppercase underline-offset-4 hover:underline">
+            Reviews
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
@@ -187,7 +129,7 @@ export default function HomePage() {
               href="https://www.instagram.com/blancoone/"
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative aspect-square overflow-hidden bg-[#ececea]"
+              className="group relative aspect-square overflow-hidden bg-[#eceae6]"
             >
               <Image
                 src={m.image}
@@ -196,10 +138,6 @@ export default function HomePage() {
                 className="object-cover transition duration-500 group-hover:scale-[1.03]"
                 sizes="25vw"
               />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-xs text-white opacity-0 transition duration-300 group-hover:opacity-100">
-                <p className="font-medium">{m.handle}</p>
-                <p className="text-white/70">{m.caption}</p>
-              </div>
             </a>
           ))}
         </div>

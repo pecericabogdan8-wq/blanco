@@ -21,7 +21,7 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="group relative">
       <Link
         href={`/product/${product.slug}`}
-        className="img-zoom relative block overflow-hidden bg-[#ececea]"
+        className="img-zoom relative block overflow-hidden bg-[#f0eee9]"
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden">
           <Image

@@ -22,7 +22,9 @@
 
 # misc
 .DS_Store
+desktop.ini
 *.pem
+# keep raw shoot in /items on git if needed; ignore OS junk only
 
 # debug
 npm-debug.log*

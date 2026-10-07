@@ -278,12 +278,15 @@ export const useShopStore = create<ShopState>()(
         }),
     }),
     {
-      name: "blanco-shop-v1",
+      name: "blanco-shop-v2",
       onRehydrateStorage: () => (state) => {
-        state?.setHydrated(true);
+        // Always sync catalog from source so new photos/products appear
+        if (state) {
+          state.products = cloneProducts();
+          state.setHydrated(true);
+        }
       },
       partialize: (s) => ({
-        products: s.products,
         cart: s.cart,
         wishlist: s.wishlist,
         orders: s.orders,

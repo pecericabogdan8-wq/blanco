@@ -10,11 +10,9 @@ import { useCartCount, useShopStore, useWishlistCount } from "@/store/shop-store
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/catalog", label: "Каталог" },
-  { href: "/catalog?category=sweaters", label: "Светри" },
-  { href: "/sale", label: "Sale" },
-  { href: "/reviews", label: "Відгуки" },
-  { href: "/returns", label: "Повернення" },
+  { href: "/catalog", label: "Shop" },
+  { href: "/reviews", label: "About" },
+  { href: "/returns", label: "Contacts" },
 ];
 
 export function SiteHeader() {
@@ -25,6 +23,7 @@ export function SiteHeader() {
   const cartCount = useCartCount();
   const wishCount = useWishlistCount();
   const user = useShopStore((s) => s.user);
+  const isHome = pathname === "/";
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -34,11 +33,34 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-[#f7f7f5]/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:h-16 sm:px-6">
+    <header
+      className={cn(
+        "sticky top-0 z-50 transition-colors",
+        isHome
+          ? "absolute inset-x-0 border-transparent bg-transparent text-white"
+          : "border-b border-border/80 bg-[#f6f5f2]/90 text-foreground backdrop-blur-md"
+      )}
+    >
+      <div className="relative mx-auto grid h-16 max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:h-[4.5rem] sm:px-6">
+        <nav className="hidden items-center gap-6 lg:flex">
+          {NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "text-[12px] tracking-[0.14em] uppercase transition-opacity hover:opacity-70",
+                pathname.startsWith(item.href) && "opacity-100",
+                isHome ? "text-white/90" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
         <button
           type="button"
-          className="pressable lg:hidden"
+          className="pressable justify-self-start lg:hidden"
           aria-label="Меню"
           onClick={() => setOpen((v) => !v)}
         >
@@ -47,57 +69,43 @@ export function SiteHeader() {
 
         <Link
           href="/"
-          className="font-display text-2xl font-bold tracking-tight transition-opacity hover:opacity-70 sm:text-3xl"
+          className="font-display justify-self-center text-[2.35rem] leading-none tracking-normal sm:text-[2.75rem]"
         >
-          blanco
+          Blanco
         </Link>
 
-        <nav className="ml-8 hidden items-center gap-6 lg:flex">
-          {NAV.map((item) => {
-            const active =
-              item.href === "/catalog"
-                ? pathname === "/catalog"
-                : item.href.startsWith("/catalog")
-                  ? false
-                  : pathname === item.href || pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
+        <div className="flex items-center justify-end gap-0.5">
+          <form onSubmit={onSearch} className="mr-1 hidden max-w-[10rem] md:block">
+            <div className="relative">
+              <Search
                 className={cn(
-                  "text-[13px] tracking-[0.04em] text-muted-foreground transition-colors duration-150 hover:text-foreground",
-                  active && "text-foreground"
+                  "pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2",
+                  isHome ? "text-white/70" : "text-muted-foreground"
                 )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <form onSubmit={onSearch} className="ml-auto hidden max-w-xs flex-1 md:flex">
-          <div className="relative w-full">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Пошук…"
-              className="h-9 rounded-full border-border/70 bg-white/80 pl-9 shadow-none"
-              aria-label="Пошук товарів"
-            />
-          </div>
-        </form>
-
-        <div className="ml-auto flex items-center gap-0.5 md:ml-3">
+              />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search"
+                className={cn(
+                  "h-8 border-0 bg-transparent pl-8 text-xs shadow-none focus-visible:ring-0",
+                  isHome
+                    ? "text-white placeholder:text-white/55"
+                    : "placeholder:text-muted-foreground"
+                )}
+                aria-label="Пошук товарів"
+              />
+            </div>
+          </form>
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className={cn("relative", isHome && "text-white hover:bg-white/10 hover:text-white")}
             render={<Link href="/wishlist" aria-label="Wishlist" />}
           >
             <Heart className="size-5" />
             {wishCount > 0 && (
-              <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+              <span className="absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground">
                 {wishCount}
               </span>
             )}
@@ -105,12 +113,12 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className={cn("relative", isHome && "text-white hover:bg-white/10 hover:text-white")}
             render={<Link href="/cart" aria-label="Кошик" />}
           >
             <ShoppingBag className="size-5" />
             {cartCount > 0 && (
-              <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+              <span className="absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground">
                 {cartCount}
               </span>
             )}
@@ -118,6 +126,7 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
+            className={cn(isHome && "text-white hover:bg-white/10 hover:text-white")}
             render={<Link href={user ? "/account" : "/auth/login"} aria-label="Акаунт" />}
           >
             <User className="size-5" />
@@ -126,17 +135,19 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <div className="border-t border-border/70 bg-white px-4 py-5 lg:hidden">
+        <div
+          className={cn(
+            "border-t px-4 py-5 lg:hidden",
+            isHome ? "border-white/15 bg-black/80 text-white" : "border-border bg-white"
+          )}
+        >
           <form onSubmit={onSearch} className="mb-4">
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Пошук…"
-                className="rounded-full pl-9"
-              />
-            </div>
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search…"
+              className="rounded-none"
+            />
           </form>
           <nav className="flex flex-col gap-3.5">
             {NAV.map((item) => (
@@ -144,17 +155,13 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="text-base tracking-wide"
+                className="text-sm tracking-[0.14em] uppercase"
               >
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/admin"
-              onClick={() => setOpen(false)}
-              className="text-sm text-muted-foreground"
-            >
-              Адмін
+            <Link href="/sale" onClick={() => setOpen(false)} className="text-sm tracking-[0.14em] uppercase opacity-70">
+              Sale
             </Link>
           </nav>
         </div>

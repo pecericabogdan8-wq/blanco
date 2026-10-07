@@ -14,7 +14,8 @@ export default function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const order = useShopStore((s) => s.orders.find((o) => o.id === id));
+  const orders = useShopStore((s) => s.orders);
+  const order = orders.find((o) => o.id === id);
 
   if (!order) {
     return (

@@ -1,9 +1,9 @@
+/** Stable currency formatting (avoids SSR/client Intl symbol mismatch: ₴ vs грн). */
 export function formatUAH(amount: number): string {
-  return new Intl.NumberFormat("uk-UA", {
-    style: "currency",
-    currency: "UAH",
+  const formatted = new Intl.NumberFormat("uk-UA", {
     maximumFractionDigits: 0,
   }).format(amount);
+  return `${formatted} грн`;
 }
 
 export function productPrice(price: number, salePrice?: number) {

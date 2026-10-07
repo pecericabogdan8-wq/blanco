@@ -76,24 +76,25 @@ function CatalogInner() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-      <div className="mb-8">
-        <h1 className="font-display text-4xl font-bold tracking-tight">Каталог</h1>
-        <p className="mt-2 text-muted-foreground">
-          {q ? `Пошук: «${params.get("q")}» · ` : ""}
-          {filtered.length} товарів
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">Shop</p>
+          <h1 className="font-display mt-1 text-4xl font-bold tracking-tight">Каталог</h1>
+          <p className="mt-2 text-muted-foreground">
+            {q ? `Пошук: «${params.get("q")}» · ` : ""}
+            {filtered.length} товарів
+          </p>
+        </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-8 flex flex-wrap gap-2">
         {(["all", "sweaters", "tshirts", "scarves"] as const).map((c) => (
           <button
             key={c}
             type="button"
             onClick={() => setParam("category", c)}
-            className={`px-3 py-1.5 text-sm transition ${
-              category === c
-                ? "bg-ink text-mist"
-                : "bg-secondary text-foreground hover:bg-accent"
+            className={`shop-chip pressable ${
+              category === c ? "shop-chip-active" : "shop-chip-idle"
             }`}
           >
             {CATEGORY_LABELS[c]}
@@ -101,18 +102,20 @@ function CatalogInner() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
-        <aside className="space-y-6">
+      <div className="grid gap-10 lg:grid-cols-[200px_1fr]">
+        <aside className="space-y-7">
           <div>
-            <p className="mb-2 text-xs tracking-widest text-muted-foreground uppercase">Розмір</p>
+            <p className="mb-2.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Розмір
+            </p>
             <div className="flex flex-wrap gap-2">
               {(["S", "M", "L", "XL", "ONE"] as ProductSize[]).map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setParam("size", size === s ? null : s)}
-                  className={`min-w-10 border px-2 py-1 text-sm ${
-                    size === s ? "border-ink bg-ink text-mist" : "border-border"
+                  className={`pressable min-w-10 border px-2.5 py-1.5 text-sm transition-colors ${
+                    size === s ? "border-ink bg-ink text-mist" : "border-border bg-white hover:border-ink/40"
                   }`}
                 >
                   {s}
@@ -121,16 +124,18 @@ function CatalogInner() {
             </div>
           </div>
           <div>
-            <p className="mb-2 text-xs tracking-widest text-muted-foreground uppercase">Колір</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="mb-2.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Колір
+            </p>
+            <div className="flex flex-wrap gap-2.5">
               {allColors.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   title={c.name}
                   onClick={() => setParam("color", color === c.id ? null : c.id)}
-                  className={`size-7 rounded-full border-2 ${
-                    color === c.id ? "border-ink" : "border-transparent"
+                  className={`size-7 rounded-full border-2 transition ${
+                    color === c.id ? "border-ink scale-110" : "border-transparent ring-1 ring-border"
                   }`}
                   style={{ backgroundColor: c.hex }}
                 />
@@ -146,9 +151,11 @@ function CatalogInner() {
             <Label htmlFor="instock">Лише в наявності</Label>
           </div>
           <div>
-            <p className="mb-2 text-xs tracking-widest text-muted-foreground uppercase">Сортування</p>
-            <Select value={sort} onValueChange={(v) => setParam("sort", v)}>
-              <SelectTrigger>
+            <p className="mb-2.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Сортування
+            </p>
+            <Select value={sort} onValueChange={(v) => setParam("sort", v ?? "featured")}>
+              <SelectTrigger className="bg-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -163,12 +170,12 @@ function CatalogInner() {
 
         <div>
           {filtered.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border p-12 text-center">
+            <div className="border border-dashed border-border bg-white/60 p-12 text-center">
               <p className="font-medium">Нічого не знайдено</p>
               <p className="mt-1 text-sm text-muted-foreground">Спробуйте інші фільтри</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+            <div className="product-grid grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-5 md:gap-y-10">
               {filtered.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}

@@ -3,18 +3,20 @@ import { Outfit, Syne } from "next/font/google";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Providers } from "@/components/providers";
-import { SupportChat } from "@/components/support/support-chat";
+import { SupportChatLazy } from "@/components/support/support-chat-lazy";
 import "./globals.css";
 
 const outfit = Outfit({
   variable: "--font-sans",
   subsets: ["latin", "latin-ext"],
+  display: "swap",
 });
 
 const syne = Syne({
   variable: "--font-display",
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -37,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="uk"
+      data-scroll-behavior="smooth"
       className={`${outfit.variable} ${syne.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
@@ -44,7 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
           <main className="flex-1">{children}</main>
           <SiteFooter />
-          <SupportChat />
+          <SupportChatLazy />
         </Providers>
       </body>
     </html>

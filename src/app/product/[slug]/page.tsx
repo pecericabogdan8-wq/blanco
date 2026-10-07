@@ -28,7 +28,9 @@ export default function ProductPage({
   const products = useShopStore((s) => s.products);
   const addToCart = useShopStore((s) => s.addToCart);
   const toggleWishlist = useShopStore((s) => s.toggleWishlist);
-  const wishlist = useShopStore((s) => s.wishlist);
+  const wished = useShopStore((s) => s.wishlist.includes(
+    s.products.find((p) => p.slug === slug)?.id ?? ""
+  ));
 
   const product = products.find((p) => p.slug === slug);
   const [colorId, setColorId] = useState(product?.colors[0]?.id ?? "");
@@ -53,7 +55,6 @@ export default function ProductPage({
   }
 
   const { current, onSale, original } = productPrice(product.price, product.salePrice);
-  const wished = wishlist.includes(product.id);
   const related = products
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
@@ -181,13 +182,14 @@ export default function ProductPage({
             </p>
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" onClick={handleAdd} disabled={stock === 0} className="min-w-48">
+          <div className="sticky bottom-4 z-20 mt-8 flex flex-wrap gap-3 rounded-lg border border-border/80 bg-white/95 p-3 shadow-sm backdrop-blur-md sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
+            <Button size="lg" onClick={handleAdd} disabled={stock === 0} className="min-w-48 flex-1 sm:flex-none">
               <ShoppingBag className="size-4" />В кошик
             </Button>
             <Button
               size="lg"
               variant="outline"
+              className="bg-white"
               onClick={() => {
                 toggleWishlist(product.id);
                 toast.success(wished ? "Прибрано з wishlist" : "У wishlist");

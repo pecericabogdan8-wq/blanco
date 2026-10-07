@@ -26,7 +26,7 @@ export function SupportChat() {
       id: "welcome",
       role: "assistant",
       text: "Привіт! Я AI-підтримка blanco. Запитайте про доставку, оплату, розміри чи повернення. Якщо не зможу допомогти — передам тікет у Telegram.",
-      ts: Date.now(),
+      ts: 0,
     },
   ]);
   const addTicket = useShopStore((s) => s.addTicket);
@@ -144,7 +144,7 @@ export function SupportChat() {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm text-mist shadow-lg transition hover:scale-[1.02]",
+          "fixed right-4 bottom-4 z-50 flex items-center gap-2 bg-ink px-4 py-3 text-sm text-mist shadow-lg transition duration-150 hover:bg-ink/90 active:scale-[0.98]",
           open && "pointer-events-none opacity-0"
         )}
         aria-label="Відкрити підтримку"

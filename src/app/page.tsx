@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo } from "react";
 import { ArrowRight } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import { ProductCard } from "@/components/shop/product-card";
@@ -11,7 +12,10 @@ import { useShopStore } from "@/store/shop-store";
 
 export default function HomePage() {
   const products = useShopStore((s) => s.products);
-  const featured = products.filter((p) => p.featured).slice(0, 4);
+  const featured = useMemo(
+    () => products.filter((p) => p.featured).slice(0, 4),
+    [products]
+  );
 
   return (
     <div>
@@ -26,7 +30,7 @@ export default function HomePage() {
             className="object-cover"
             sizes="100vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/55 to-ink/25" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-ink/20" />
         </div>
 
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-20">
@@ -40,7 +44,11 @@ export default function HomePage() {
             Історія — на грудях. Унісекс. Зроблено в Україні.
           </p>
           <div className="reveal reveal-delay-3 mt-8 flex flex-wrap gap-3">
-            <Button size="lg" className="bg-mist text-ink hover:bg-mist/90" render={<Link href="/catalog" />}>
+            <Button
+              size="lg"
+              className="bg-mist text-ink hover:bg-mist/90"
+              render={<Link href="/catalog" />}
+            >
               Дивитись каталог
               <ArrowRight className="size-4" />
             </Button>
@@ -64,8 +72,8 @@ export default function HomePage() {
       </section>
 
       {/* Marquee */}
-      <div className="overflow-hidden border-y border-border/60 bg-mist/50 py-3">
-        <div className="marquee flex w-max gap-10 whitespace-nowrap text-xs tracking-[0.25em] text-muted-foreground uppercase">
+      <div className="overflow-hidden border-y border-border bg-white py-3.5">
+        <div className="marquee flex w-max gap-10 whitespace-nowrap text-[11px] tracking-[0.28em] text-muted-foreground uppercase">
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="flex gap-10 px-5">
               <span>Шевченко</span>
@@ -80,31 +88,34 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Featured */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+      {/* Featured shop grid */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-10 flex items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
+              Shop
+            </p>
+            <h2 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
               Вибране
             </h2>
             <p className="mt-2 text-muted-foreground">Портрети, які хочеться носити</p>
           </div>
           <Link
             href="/catalog"
-            className="hidden text-sm underline-offset-4 hover:underline sm:inline"
+            className="hidden text-sm tracking-wide underline-offset-4 transition-opacity hover:underline sm:inline"
           >
             Увесь каталог
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+        <div className="product-grid grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5 md:gap-y-10">
           {featured.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
       </section>
 
-      {/* Categories strip */}
-      <section className="border-y border-border/60 bg-ink text-mist">
+      {/* Category lookbook */}
+      <section className="border-y border-border bg-ink text-mist">
         <div className="mx-auto grid max-w-7xl md:grid-cols-3">
           {[
             {
@@ -129,18 +140,21 @@ export default function HomePage() {
             <Link
               key={c.href}
               href={c.href}
-              className="group relative min-h-56 overflow-hidden border-b border-white/10 md:border-r md:border-b-0 md:last:border-r-0"
+              className="group relative min-h-64 overflow-hidden border-b border-white/10 md:border-r md:border-b-0 md:last:border-r-0"
             >
               <Image
                 src={c.img}
                 alt={c.title}
                 fill
-                className="object-cover opacity-40 transition duration-700 group-hover:scale-105 group-hover:opacity-55"
+                className="object-cover opacity-40 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-55"
                 sizes="33vw"
               />
               <div className="relative z-10 flex h-full flex-col justify-end p-8">
                 <h3 className="font-display text-3xl font-bold">{c.title}</h3>
                 <p className="mt-1 text-sm text-mist/70">{c.text}</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-xs tracking-[0.16em] text-mist/80 uppercase opacity-0 transition duration-300 group-hover:opacity-100">
+                  Дивитись <ArrowRight className="size-3.5" />
+                </span>
               </div>
             </Link>
           ))}
@@ -148,35 +162,41 @@ export default function HomePage() {
       </section>
 
       {/* Mentions teaser */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-10 flex items-end justify-between">
           <div>
-            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
+              Community
+            </p>
+            <h2 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
               У стрічці
             </h2>
             <p className="mt-2 text-muted-foreground">Відмітки з Instagram</p>
           </div>
-          <Link href="/reviews" className="text-sm underline-offset-4 hover:underline">
+          <Link
+            href="/reviews"
+            className="text-sm tracking-wide underline-offset-4 hover:underline"
+          >
             Відгуки
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
           {DEMO_MENTIONS.map((m) => (
             <a
               key={m.id}
               href="https://www.instagram.com/blancoone/"
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative aspect-square overflow-hidden bg-mist"
+              className="group relative aspect-square overflow-hidden bg-[#ececea]"
             >
               <Image
                 src={m.image}
                 alt={m.handle}
                 fill
-                className="object-cover transition duration-500 group-hover:scale-105"
+                className="object-cover transition duration-500 group-hover:scale-[1.03]"
                 sizes="25vw"
               />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-xs text-white opacity-0 transition group-hover:opacity-100">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-xs text-white opacity-0 transition duration-300 group-hover:opacity-100">
                 <p className="font-medium">{m.handle}</p>
                 <p className="text-white/70">{m.caption}</p>
               </div>

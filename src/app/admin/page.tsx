@@ -578,7 +578,11 @@ export default function AdminPage() {
                   }}
                 >
                   <SelectTrigger className="w-44 bg-white">
-                    <SelectValue />
+                    <SelectValue>
+                      {(v) =>
+                        ORDER_STATUS_LABELS[String(v ?? "")] ?? String(v ?? "")
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {FLOW.map((s) => (
@@ -633,8 +637,12 @@ export default function AdminPage() {
                       setForm((f) => ({ ...f, category: v as Category }))
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue>
+                        {(v) =>
+                          CATEGORY_LABELS[String(v ?? "")] ?? String(v ?? "")
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {(["sweaters", "tshirts", "scarves"] as const).map((c) => (

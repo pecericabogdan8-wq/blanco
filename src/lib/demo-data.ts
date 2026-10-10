@@ -390,6 +390,22 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   cancelled: "Скасовано",
 };
 
+/** Status chip colors (admin + account) */
+export const ORDER_STATUS_STYLE: Record<
+  string,
+  { dot: string; chip: string }
+> = {
+  placed: { dot: "bg-sky-500", chip: "bg-sky-500/10 text-sky-800" },
+  paid: { dot: "bg-indigo-500", chip: "bg-indigo-500/10 text-indigo-800" },
+  processing: { dot: "bg-amber-500", chip: "bg-amber-500/10 text-amber-900" },
+  shipped: { dot: "bg-violet-500", chip: "bg-violet-500/10 text-violet-800" },
+  delivered: {
+    dot: "bg-emerald-600",
+    chip: "bg-emerald-600/10 text-emerald-800",
+  },
+  cancelled: { dot: "bg-[#9b1c1c]", chip: "bg-[#9b1c1c]/10 text-[#9b1c1c]" },
+};
+
 /** FAQ matchers → Support message keys (answers live in messages/*.json) */
 export const FAQ_PATTERNS: {
   q: RegExp;

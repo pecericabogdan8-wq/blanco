@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ORDER_STATUS_STYLE } from "@/lib/demo-data";
 import { formatUAH } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import { useShopStore } from "@/store/shop-store";
+import { cn } from "@/lib/utils";
 
 export default function AccountPage() {
   const t = useTranslations("Account");
@@ -136,23 +138,44 @@ export default function AccountPage() {
             <p className="mt-4 text-sm text-muted-foreground">{t("noOrders")}</p>
           ) : (
             <ul className="mt-4 divide-y divide-border border border-border">
-              {orders.map((o) => (
-                <li key={o.id}>
-                  <Link
-                    href={`/account/orders/${o.id}`}
-                    className="flex items-center justify-between gap-3 px-4 py-4 hover:bg-mist/50"
-                  >
-                    <div>
-                      <p className="font-medium">{o.id}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(o.createdAt).toLocaleString("uk-UA")}{" "}
-                        · {tStatus(o.status as "placed")}
-                      </p>
-                    </div>
-                    <span>{formatUAH(o.total)}</span>
-                  </Link>
-                </li>
-              ))}
+              {orders.map((o) => {
+                const st =
+                  ORDER_STATUS_STYLE[o.status] ?? ORDER_STATUS_STYLE.placed;
+                return (
+                  <li key={o.id}>
+                    <Link
+                      href={`/account/orders/${o.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-4 hover:bg-mist/50"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{o.id}</p>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                              st.chip
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "size-1.5 shrink-0 rounded-full",
+                                st.dot
+                              )}
+                            />
+                            {tStatus(o.status as "placed")}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {new Date(o.createdAt).toLocaleString("uk-UA")}
+                        </p>
+                      </div>
+                      <span className="shrink-0 tabular-nums">
+                        {formatUAH(o.total)}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

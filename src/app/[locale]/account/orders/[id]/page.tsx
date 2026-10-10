@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ORDER_STATUS_STYLE } from "@/lib/demo-data";
 import { formatUAH } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -70,11 +71,23 @@ export default function OrderDetailPage({
       <h1 className="font-display mt-2 text-4xl font-bold tracking-tight">
         {order.id}
       </h1>
-      <p className="mt-2 text-muted-foreground">
-        {new Date(order.createdAt).toLocaleString("uk-UA")} ·{" "}
-        <span className="font-medium text-foreground">
-          {tStatus(order.status as "placed")}
-        </span>
+      <p className="mt-2 flex flex-wrap items-center gap-2 text-muted-foreground">
+        <span>{new Date(order.createdAt).toLocaleString("uk-UA")}</span>
+        {(() => {
+          const st =
+            ORDER_STATUS_STYLE[order.status] ?? ORDER_STATUS_STYLE.placed;
+          return (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                st.chip
+              )}
+            >
+              <span className={cn("size-1.5 shrink-0 rounded-full", st.dot)} />
+              {tStatus(order.status as "placed")}
+            </span>
+          );
+        })()}
       </p>
 
       <div className="mt-8 space-y-4 border border-border p-4">

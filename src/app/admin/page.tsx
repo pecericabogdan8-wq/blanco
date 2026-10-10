@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Package, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, Package, Plus, Trash2 } from "lucide-react";
 import { ImageGalleryField } from "@/components/admin/image-gallery-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +75,19 @@ const FLOW: OrderStatus[] = [
   "cancelled",
 ];
 
+const ORDER_STATUS_CHIP: Record<OrderStatus, string> = {
+  placed: "bg-sky-100 text-sky-800 ring-sky-200",
+  paid: "bg-indigo-100 text-indigo-800 ring-indigo-200",
+  processing: "bg-amber-100 text-amber-800 ring-amber-200",
+  shipped: "bg-violet-100 text-violet-800 ring-violet-200",
+  delivered: "bg-emerald-100 text-emerald-800 ring-emerald-200",
+  cancelled: "bg-[#9b1c1c]/10 text-[#9b1c1c] ring-[#9b1c1c]/20",
+};
+
+function invKey(colorKey: string, size: string) {
+  return `${colorKey}:${size}`;
+}
+
 function emptySizeChart(sizesCsv: string): SizeChartRow[] {
   return parseSizesCsv(sizesCsv).map((size) => ({
     size: size as ProductSize,
@@ -101,7 +114,7 @@ const emptyForm = () => ({
   figure: "",
   colors: [] as FormColor[],
   sizes: "",
-  stockBySize: {} as Record<string, string>,
+  inventory: {} as Record<string, string>,
   images: [] as string[],
   tags: "",
   sizeChart: [] as SizeChartRow[],
@@ -116,11 +129,9 @@ function linesToList(raw: string): string[] {
 
 function productToForm(p: Product) {
   const sizes = p.sizes.join(",");
-  const primary = p.colors[0]?.id;
-  const stockBySize: Record<string, string> = {};
-  for (const s of p.sizes) {
-    const qty = primary != null ? (p.inventory[`${primary}:${s}`] ?? 0) : 0;
-    stockBySize[s] = String(qty);
+  const inventory: Record<string, string> = {};
+  for (const [k, v] of Object.entries(p.inventory)) {
+    inventory[k] = String(v);
   }
   return {
     name: p.nameUk || p.name,
@@ -137,7 +148,7 @@ function productToForm(p: Product) {
       hex: c.hex,
     })) as FormColor[],
     sizes,
-    stockBySize,
+    inventory,
     images: [...p.images],
     tags: (p.tags ?? []).join(", "),
     sizeChart: (p.sizeChart?.length
@@ -160,18 +171,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm());
   const [editId, setEditId] = useState<string | null>(null);
-  const [stockProductId, setStockProductId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("orders");
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [productsView, setProductsView] = useState<"catalog" | "trash">(
     "catalog"
   );
-  const [newColor, setNewColor] = useState({
-    key: "",
-    name: "",
-    hex: "#E8E4DC",
-    stock: "",
-  });
-  const [newSize, setNewSize] = useState("");
   const [customColor, setCustomColor] = useState({
     name: "",
     hex: "#8B6F5C",
@@ -315,20 +319,16 @@ export default function AdminPage() {
       };
     });
 
-    const stockBySize: Record<string, number> = {};
-    for (const s of sizes) {
-      const raw = String(form.stockBySize[s] ?? "").trim();
-      stockBySize[s] = Math.max(0, raw === "" ? 0 : Number(raw) || 0);
-    }
-
     const inventory: Record<string, number> = {};
     for (const c of colors) {
       for (const s of sizes) {
-        inventory[`${c.id}:${s}`] = stockBySize[s] ?? 0;
+        const key = invKey(c.id, s);
+        const raw = String(form.inventory[key] ?? "").trim();
+        inventory[key] = Math.max(0, raw === "" ? 0 : Number(raw) || 0);
       }
     }
 
-    const payload = {
+    const body = {
       name: form.name.trim(),
       nameUk: form.name.trim(),
       slug: form.slug.trim(),
@@ -346,41 +346,8 @@ export default function AdminPage() {
       images,
       colors,
       sizes,
-      stockBySize,
       inventory,
     };
-
-    // Edit: sync colors + stock only for primary color sizes (інші кольори — «Склад»)
-    const primaryKey = colors[0]?.id;
-    const editInventory: Record<string, number> = {};
-    if (primaryKey) {
-      for (const s of sizes) {
-        editInventory[`${primaryKey}:${s}`] = stockBySize[s] ?? 0;
-      }
-    }
-
-    const body = editId
-      ? {
-          name: payload.name,
-          nameUk: payload.nameUk,
-          slug: payload.slug,
-          category: payload.category,
-          description: payload.description,
-          descriptionUk: payload.descriptionUk,
-          details: payload.details,
-          detailsUk: payload.detailsUk,
-          price: payload.price,
-          salePrice: payload.salePrice,
-          figure: payload.figure,
-          figureUk: payload.figureUk,
-          tags: payload.tags,
-          sizeChart: payload.sizeChart,
-          images: payload.images,
-          colors: payload.colors,
-          sizes: payload.sizes,
-          inventory: editInventory,
-        }
-      : payload;
 
     const res = await fetch(editId ? `/api/products/${editId}` : "/api/products", {
       method: editId ? "PATCH" : "POST",
@@ -419,14 +386,17 @@ export default function AdminPage() {
 
   function syncSizes(sizesCsv: string, prev = form) {
     const keys = parseSizesCsv(sizesCsv);
-    const stockBySize: Record<string, string> = {};
-    for (const s of keys) {
-      stockBySize[s] = prev.stockBySize[s] ?? "";
+    const inventory: Record<string, string> = {};
+    for (const [k, v] of Object.entries(prev.inventory)) {
+      const sizePart = k.split(":").pop();
+      if (sizePart && keys.includes(sizePart)) {
+        inventory[k] = v;
+      }
     }
     return {
       ...prev,
       sizes: sizesCsv,
-      stockBySize,
+      inventory,
       sizeChart: keys.map((size) => {
         const found = prev.sizeChart.find((r) => r.size === size);
         return (
@@ -450,8 +420,19 @@ export default function AdminPage() {
     });
   }
 
-  const stockProduct =
-    products.find((p) => p.id === stockProductId) ?? products[0] ?? null;
+  function removeFormColor(colorKey: string) {
+    setForm((f) => {
+      const inventory = { ...f.inventory };
+      for (const k of Object.keys(inventory)) {
+        if (k.startsWith(`${colorKey}:`)) delete inventory[k];
+      }
+      return {
+        ...f,
+        colors: f.colors.filter((c) => c.key !== colorKey),
+        inventory,
+      };
+    });
+  }
 
   return (
     <div className="min-h-screen bg-[#f3f2ef]">
@@ -505,7 +486,6 @@ export default function AdminPage() {
               [
                 ["orders", `Замовлення (${orders.length})`],
                 ["products", `Товари (${products.length})`],
-                ["stock", "Склад"],
                 ["tickets", `Тікети (${tickets.length})`],
               ] as const
             ).map(([v, label]) => (
@@ -528,119 +508,161 @@ export default function AdminPage() {
                 Замовлень ще немає — оформіть тестове з сайту
               </p>
             )}
-            {orders.map((o) => (
-              <div
-                key={o.id}
-                className="grid gap-4 border border-border bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium">{o.id}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(o.createdAt).toLocaleString("uk-UA")} ·{" "}
-                    {o.customer.name} · {o.customer.email}
-                  </p>
-                  <p className="mt-1 text-sm">{formatUAH(o.total)}</p>
-                  {o.payments?.[0] && (
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      {o.payments[0].provider} · {formatUAH(o.payments[0].amount)}
-                    </p>
-                  )}
-                  <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-                    {o.items.map((i) => (
-                      <li key={`${i.productId}-${i.size}-${i.colorId}`}>
-                        {i.name} · {i.colorName} · {i.size} ×{i.qty}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <Select
-                  value={o.status}
-                  onValueChange={async (v) => {
-                    const res = await fetch(`/api/orders/${o.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ status: v }),
-                    });
-                    const data = await res.json();
-                    if (!data.ok) toast.error(data.error);
-                    else {
-                      toast.success("Статус у базі оновлено");
-                      await reload();
-                    }
-                  }}
+            {orders.map((o) => {
+              const open = openOrderId === o.id;
+              return (
+                <div
+                  key={o.id}
+                  className="border border-border bg-white"
                 >
-                  <SelectTrigger className="w-44 bg-white">
-                    <SelectValue>
-                      {(v) =>
-                        ORDER_STATUS_LABELS[String(v ?? "")] ?? String(v ?? "")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FLOW.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {ORDER_STATUS_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 p-4 text-left transition hover:bg-[#faf9f7]"
+                    onClick={() =>
+                      setOpenOrderId(open ? null : o.id)
+                    }
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "size-4 shrink-0 text-muted-foreground transition-transform",
+                        open && "rotate-180"
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{o.id}</p>
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+                            ORDER_STATUS_CHIP[o.status]
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "size-1.5 rounded-full",
+                              o.status === "placed" && "bg-sky-500",
+                              o.status === "paid" && "bg-indigo-500",
+                              o.status === "processing" && "bg-amber-500",
+                              o.status === "shipped" && "bg-violet-500",
+                              o.status === "delivered" && "bg-emerald-500",
+                              o.status === "cancelled" && "bg-[#9b1c1c]"
+                            )}
+                          />
+                          {ORDER_STATUS_LABELS[o.status]}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {o.customer.name} · {o.customer.email}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-medium tabular-nums">
+                      {formatUAH(o.total)}
+                    </p>
+                  </button>
+                  {open && (
+                    <div className="space-y-3 border-t border-border px-4 py-4 pl-11">
+                      <ul className="space-y-1 text-sm">
+                        {o.items.map((i) => (
+                          <li
+                            key={`${i.productId}-${i.size}-${i.colorId}`}
+                            className="text-muted-foreground"
+                          >
+                            {i.name} · {i.colorName} · {i.size} ×{i.qty} —{" "}
+                            {formatUAH(i.price * i.qty)}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="grid gap-2 text-sm sm:grid-cols-2">
+                        <p>
+                          <span className="text-muted-foreground">Телефон: </span>
+                          {o.customer.phone || "—"}
+                        </p>
+                        <p>
+                          <span className="text-muted-foreground">Оплата: </span>
+                          {o.paymentMethod}
+                        </p>
+                        <p className="sm:col-span-2">
+                          <span className="text-muted-foreground">
+                            Доставка:{" "}
+                          </span>
+                          {o.customer.city}, {o.customer.address}
+                          {o.customer.novaPoshta
+                            ? ` · НП ${o.customer.novaPoshta}`
+                            : ""}
+                        </p>
+                        <p>
+                          <span className="text-muted-foreground">
+                            Доставка, грн:{" "}
+                          </span>
+                          {formatUAH(o.shipping)}
+                        </p>
+                        {o.payments?.[0] && (
+                          <p>
+                            <span className="text-muted-foreground">
+                              Платіж:{" "}
+                            </span>
+                            {o.payments[0].provider} ·{" "}
+                            {formatUAH(o.payments[0].amount)}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground sm:col-span-2">
+                          {new Date(o.createdAt).toLocaleString("uk-UA")}
+                        </p>
+                      </div>
+                      <Select
+                        value={o.status}
+                        onValueChange={async (v) => {
+                          const res = await fetch(`/api/orders/${o.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ status: v }),
+                          });
+                          const data = await res.json();
+                          if (!data.ok) toast.error(data.error);
+                          else {
+                            toast.success("Статус у базі оновлено");
+                            await reload();
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-full max-w-xs bg-white">
+                          <SelectValue>
+                            {(v) =>
+                              ORDER_STATUS_LABELS[String(v ?? "")] ??
+                              String(v ?? "")
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FLOW.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {ORDER_STATUS_LABELS[s]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </TabsContent>
 
           <TabsContent value="products" className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div
-                className="inline-flex w-full max-w-md rounded-none border border-border bg-white p-0.5 sm:w-auto"
-                role="tablist"
-                aria-label="Розділ товарів"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={productsView === "catalog"}
-                  onClick={() => setProductsView("catalog")}
-                  className={cn(
-                    "flex-1 px-3 py-2 text-sm transition sm:flex-none sm:px-4",
-                    productsView === "catalog"
-                      ? "bg-ink text-mist"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Каталог ({products.length})
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={productsView === "trash"}
-                  onClick={() => setProductsView("trash")}
-                  className={cn(
-                    "inline-flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-sm transition sm:flex-none sm:px-4",
-                    productsView === "trash"
-                      ? "bg-ink text-mist"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Trash2 className="size-3.5 shrink-0" />
-                  Смітник ({trash.length})
-                </button>
-              </div>
-              {productsView === "trash" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => setProductsView("catalog")}
-                >
-                  <ArrowLeft className="size-3.5" />
-                  До каталогу
-                </Button>
-              )}
-            </div>
-
             {productsView === "trash" ? (
               <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-lg font-medium">Смітник</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setProductsView("catalog")}
+                  >
+                    <ArrowLeft className="size-3.5" />
+                    До каталогу
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Товари у смітнику приховані з каталогу. З історії замовлень
                   сторінку ще можна відкрити (без купівлі). «Видалити назавжди» —
@@ -964,12 +986,7 @@ export default function AdminPage() {
                           variant="ghost"
                           size="sm"
                           className="text-[#9b1c1c]"
-                          onClick={() =>
-                            setForm((f) => ({
-                              ...f,
-                              colors: f.colors.filter((_, j) => j !== i),
-                            }))
-                          }
+                          onClick={() => removeFormColor(c.key)}
                         >
                           <Trash2 className="size-4" />
                         </Button>
@@ -1091,38 +1108,78 @@ export default function AdminPage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
-                  <Label>Сток на кожен розмір</Label>
+                  <Label>Склад — колір × розмір</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Окреме число для кожного розміру (однакове для всіх кольорів
-                    при збереженні з форми). Детальніше по кольорах — вкладка
-                    «Склад». Порожньо = 0.
+                    Кількість на кожну комбінацію. Порожньо = 0.
                   </p>
-                  {parseSizesCsv(form.sizes).length === 0 ? (
+                  {form.colors.length === 0 ||
+                  parseSizesCsv(form.sizes).length === 0 ? (
                     <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-4 text-center text-xs text-muted-foreground">
-                      Спочатку вкажи розміри вище
+                      Додай кольори та розміри вище
                     </p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {parseSizesCsv(form.sizes).map((s) => (
-                        <div key={s} className="space-y-1">
-                          <Label className="text-[10px]">{s}</Label>
-                          <Input
-                            inputMode="numeric"
-                            value={form.stockBySize[s] ?? ""}
-                            placeholder="0"
-                            onChange={(e) => {
-                              const raw = e.target.value.replace(/[^\d]/g, "");
-                              setForm((f) => ({
-                                ...f,
-                                stockBySize: {
-                                  ...f.stockBySize,
-                                  [s]: raw,
-                                },
-                              }));
-                            }}
-                          />
-                        </div>
-                      ))}
+                    <div className="overflow-x-auto border border-border bg-white">
+                      <table className="w-full min-w-[280px] text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                            <th className="px-2 py-2 sm:px-3">Колір</th>
+                            {parseSizesCsv(form.sizes).map((s) => (
+                              <th
+                                key={s}
+                                className="px-1 py-2 text-center font-medium"
+                              >
+                                {s}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {form.colors.map((c) => (
+                            <tr
+                              key={c.key}
+                              className="border-b border-border last:border-0"
+                            >
+                              <td className="px-2 py-1.5 sm:px-3">
+                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm">
+                                  <span
+                                    className="size-3 shrink-0 rounded-full border border-black/20"
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                  <span className="max-w-[5rem] truncate sm:max-w-none">
+                                    {c.name || c.key}
+                                  </span>
+                                </span>
+                              </td>
+                              {parseSizesCsv(form.sizes).map((s) => {
+                                const key = invKey(c.key, s);
+                                return (
+                                  <td key={key} className="px-1 py-1">
+                                    <Input
+                                      inputMode="numeric"
+                                      className="h-8 min-w-[2.5rem] text-center tabular-nums"
+                                      value={form.inventory[key] ?? ""}
+                                      placeholder="0"
+                                      onChange={(e) => {
+                                        const raw = e.target.value.replace(
+                                          /[^\d]/g,
+                                          ""
+                                        );
+                                        setForm((f) => ({
+                                          ...f,
+                                          inventory: {
+                                            ...f.inventory,
+                                            [key]: raw,
+                                          },
+                                        }));
+                                      }}
+                                    />
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>
@@ -1287,11 +1344,15 @@ export default function AdminPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setProductsView("trash")}
-                  className="text-muted-foreground"
+                  className="relative text-muted-foreground transition-colors hover:border-[#9b1c1c]/50 hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
                 >
                   <Trash2 className="size-3.5" />
                   Смітник
-                  {trash.length > 0 ? ` (${trash.length})` : ""}
+                  {trash.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#9b1c1c] px-1 text-[10px] font-semibold leading-none text-white tabular-nums">
+                      {trash.length > 99 ? "99+" : trash.length}
+                    </span>
+                  )}
                 </Button>
               </div>
               {products.length === 0 && (
@@ -1300,353 +1361,107 @@ export default function AdminPage() {
                 </p>
               )}
               <ul className="space-y-2">
-                {products.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex gap-3 border border-border bg-white p-3"
-                  >
-                    <div className="relative size-14 shrink-0 overflow-hidden bg-[#eee] sm:size-16">
-                      {p.images[0] && (
-                        <Image
-                          key={p.images[0]}
-                          src={p.images[0]}
-                          alt=""
-                          fill
-                          unoptimized
-                          className="object-cover"
-                          sizes="64px"
-                        />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">
-                        {p.nameUk || p.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatUAH(p.salePrice ?? p.price)}
-                        {p.salePrice ? " · SALE" : ""} · stock{" "}
-                        {totalStock(p.inventory)} · {p.colors.length} кол. ·{" "}
-                        {p.sizes.join("/") || "—"}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditId(p.id);
-                            setForm(productToForm(p));
-                            if (typeof window !== "undefined" && window.innerWidth < 1024) {
-                              window.scrollTo({ top: 0, behavior: "smooth" });
-                            }
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setStockProductId(p.id);
-                            setActiveTab("stock");
-                          }}
-                        >
-                          Склад
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-muted-foreground hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
-                          onClick={async () => {
-                            const label = p.nameUk || p.name;
-                            if (
-                              !confirm(
-                                `Перемістити «${label}» у смітник?\nЗникне з каталогу; з історії замовлень ще можна відкрити сторінку.`
-                              )
-                            ) {
-                              return;
-                            }
-                            const res = await fetch(`/api/products/${p.id}`, {
-                              method: "DELETE",
-                            });
-                            const data = await res.json().catch(() => ({}));
-                            if (!data.ok) {
-                              toast.error(data.error ?? "Не вдалося видалити");
-                              return;
-                            }
-                            if (editId === p.id) {
-                              setEditId(null);
-                              setForm(emptyForm());
-                            }
-                            if (stockProductId === p.id) setStockProductId(null);
-                            setProducts((list) =>
-                              list.filter((x) => x.id !== p.id)
-                            );
-                            toast.success("У смітнику", {
-                              action: {
-                                label: "Відкрити",
-                                onClick: () => setProductsView("trash"),
-                              },
-                            });
-                            await reload();
-                          }}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                {products.map((p) => {
+                  const stock = totalStock(p.inventory);
+                  return (
+                    <li
+                      key={p.id}
+                      className="flex gap-3 border border-border bg-white p-3"
+                    >
+                      <div className="relative size-14 shrink-0 overflow-hidden bg-[#eee] sm:size-16">
+                        {p.images[0] && (
+                          <Image
+                            key={p.images[0]}
+                            src={p.images[0]}
+                            alt=""
+                            fill
+                            unoptimized
+                            className="object-cover"
+                            sizes="64px"
+                          />
+                        )}
                       </div>
-                    </div>
-                  </li>
-                ))}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">
+                          {p.nameUk || p.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatUAH(p.salePrice ?? p.price)}
+                          {p.salePrice ? " · SALE" : ""} · {p.colors.length}{" "}
+                          кол. · {p.sizes.join("/") || "—"}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditId(p.id);
+                              setForm(productToForm(p));
+                              if (
+                                typeof window !== "undefined" &&
+                                window.innerWidth < 1024
+                              ) {
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground hover:border-[#9b1c1c]/30 hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
+                            onClick={async () => {
+                              const label = p.nameUk || p.name;
+                              if (
+                                !confirm(
+                                  `Перемістити «${label}» у смітник?\nЗникне з каталогу; з історії замовлень ще можна відкрити сторінку.`
+                                )
+                              ) {
+                                return;
+                              }
+                              const res = await fetch(`/api/products/${p.id}`, {
+                                method: "DELETE",
+                              });
+                              const data = await res.json().catch(() => ({}));
+                              if (!data.ok) {
+                                toast.error(data.error ?? "Не вдалося видалити");
+                                return;
+                              }
+                              if (editId === p.id) {
+                                setEditId(null);
+                                setForm(emptyForm());
+                              }
+                              setProducts((list) =>
+                                list.filter((x) => x.id !== p.id)
+                              );
+                              toast.success("У смітнику", {
+                                action: {
+                                  label: "Відкрити",
+                                  onClick: () => setProductsView("trash"),
+                                },
+                              });
+                              await reload();
+                            }}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-2xl font-medium tabular-nums sm:text-3xl">
+                          {stock}
+                        </p>
+                        <p className="text-[10px] tracking-wide text-muted-foreground uppercase">
+                          на складі
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
             </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="stock" className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {products.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setStockProductId(p.id)}
-                  className={cn(
-                    "cursor-pointer border px-3 py-1.5 text-sm",
-                    (stockProduct?.id ?? products[0]?.id) === p.id
-                      ? "border-ink bg-ink text-mist"
-                      : "border-border bg-white"
-                  )}
-                >
-                  {p.nameUk || p.name}
-                  {p.colors.length > 1 ? ` · ${p.colors.length} кол.` : ""}
-                </button>
-              ))}
-            </div>
-            {stockProduct && (
-              <div className="space-y-4 border border-border bg-white p-4">
-                <div>
-                  <h2 className="mb-1 text-lg font-medium">
-                    {stockProduct.nameUk || stockProduct.name}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Сток: blur → одразу в базу. 0 = недоступно. Нижче — додати
-                    колір або розмір до цієї ж моделі (ті самі дані товару).
-                  </p>
-                </div>
-
-                <div className="grid gap-3 border border-dashed border-border bg-[#faf9f7] p-3 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
-                    <p className="text-sm font-medium">+ Колір (та сама модель)</p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>key (black, bone…)</Label>
-                    <Input
-                      value={newColor.key}
-                      onChange={(e) =>
-                        setNewColor({ ...newColor, key: e.target.value })
-                      }
-                      placeholder="bone"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>hex</Label>
-                    <Input
-                      value={newColor.hex}
-                      onChange={(e) =>
-                        setNewColor({ ...newColor, hex: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <Label>Назва кольору</Label>
-                    <Input
-                      value={newColor.name}
-                      onChange={(e) =>
-                        setNewColor({ ...newColor, name: e.target.value })
-                      }
-                      placeholder="Молочний"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Сток на кожен розмір</Label>
-                    <Input
-                      inputMode="numeric"
-                      value={newColor.stock}
-                      placeholder="0"
-                      onChange={(e) =>
-                        setNewColor({
-                          ...newColor,
-                          stock: e.target.value.replace(/[^\d]/g, ""),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      type="button"
-                      onClick={async () => {
-                        if (!newColor.key.trim() || !newColor.name.trim()) {
-                          toast.error("Потрібні key і назва кольору");
-                          return;
-                        }
-                        const stockQty = Math.max(
-                          0,
-                          Number(newColor.stock) || 0
-                        );
-                        const res = await fetch(
-                          `/api/products/${stockProduct.id}`,
-                          {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              addColor: {
-                                key: newColor.key,
-                                name: newColor.name,
-                                hex: newColor.hex,
-                                stock: stockQty,
-                                nameUk: newColor.name,
-                              },
-                            }),
-                          }
-                        );
-                        const data = await res.json();
-                        if (!data.ok) {
-                          toast.error(data.error ?? "Помилка");
-                          return;
-                        }
-                        toast.success(`Колір ${newColor.name} додано`);
-                        setNewColor({
-                          key: "",
-                          name: "",
-                          hex: "#E8E4DC",
-                          stock: "",
-                        });
-                        await reload();
-                      }}
-                    >
-                      <Plus className="size-4" />
-                      Додати колір
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-end gap-2 border border-dashed border-border bg-[#faf9f7] p-3">
-                  <div className="min-w-[8rem] flex-1 space-y-1">
-                    <Label>+ Розмір (для всіх кольорів)</Label>
-                    <Input
-                      value={newSize}
-                      onChange={(e) => setNewSize(e.target.value)}
-                      placeholder="XL"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={async () => {
-                      if (!newSize.trim()) {
-                        toast.error("Вкажіть розмір");
-                        return;
-                      }
-                      const res = await fetch(
-                        `/api/products/${stockProduct.id}`,
-                        {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            addSize: newSize.trim(),
-                            addSizeStock: 0,
-                          }),
-                        }
-                      );
-                      const data = await res.json();
-                      if (!data.ok) {
-                        toast.error(data.error ?? "Помилка");
-                        return;
-                      }
-                      toast.success(`Розмір ${newSize.trim().toUpperCase()} додано`);
-                      setNewSize("");
-                      await reload();
-                    }}
-                  >
-                    <Plus className="size-4" />
-                    Додати розмір
-                  </Button>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[480px] text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="py-2 pr-3">Колір</th>
-                        {stockProduct.sizes.map((s) => (
-                          <th key={s} className="px-1 py-2 text-center">
-                            {s}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stockProduct.colors.map((c) => (
-                        <tr key={c.id} className="border-b border-border/60">
-                          <td className="py-2 pr-3">
-                            <span className="inline-flex items-center gap-2">
-                              <span
-                                className="size-3 rounded-full border border-black/25"
-                                style={{ backgroundColor: c.hex }}
-                              />
-                              {c.nameUk || c.name}
-                              <span className="text-[10px] text-muted-foreground">
-                                {c.id}
-                              </span>
-                            </span>
-                          </td>
-                          {stockProduct.sizes.map((s) => {
-                            const key = `${c.id}:${s}`;
-                            const qty = stockProduct.inventory[key] ?? 0;
-                            return (
-                              <td key={key} className="px-1 py-1.5">
-                                <Input
-                                  type="number"
-                                  className={cn(
-                                    "h-9 text-center tabular-nums",
-                                    qty === 0 && "border-destructive/40"
-                                  )}
-                                  defaultValue={qty}
-                                  key={`${key}-${qty}`}
-                                  onBlur={async (e) => {
-                                    const stock = Math.max(
-                                      0,
-                                      Number(e.target.value) || 0
-                                    );
-                                    const res = await fetch(
-                                      `/api/products/${stockProduct.id}`,
-                                      {
-                                        method: "PATCH",
-                                        headers: {
-                                          "Content-Type": "application/json",
-                                        },
-                                        body: JSON.stringify({
-                                          inventory: { [key]: stock },
-                                        }),
-                                      }
-                                    );
-                                    const data = await res.json();
-                                    if (data.ok) {
-                                      toast.success(
-                                        `${c.name} ${s} → ${stock}`
-                                      );
-                                      await reload();
-                                    } else toast.error(data.error);
-                                  }}
-                                />
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             )}
           </TabsContent>
 

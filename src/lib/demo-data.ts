@@ -3,8 +3,15 @@ import type {
   Product,
   Review,
 } from "@/lib/types";
+import galleryManifest from "../../public/products/galleries/manifest.json";
 
-const sweaterSizes = ["S", "M", "L", "XL"] as const;
+function galleryImages(key: string, fallback: string[]): string[] {
+  const entry = galleryManifest[key as keyof typeof galleryManifest];
+  return entry?.images?.length ? entry.images : fallback;
+}
+
+const sweaterSizes = ["S", "M", "L"] as const;
+const teeSizes = ["S", "M", "L", "XL"] as const;
 const scarfSizes = ["ONE"] as const;
 
 function inv(
@@ -22,19 +29,39 @@ function inv(
 }
 
 const sizeChartSweater = [
-  { size: "S" as const, chest: "96–100", length: "66", sleeve: "62" },
-  { size: "M" as const, chest: "100–104", length: "68", sleeve: "63" },
-  { size: "L" as const, chest: "104–110", length: "70", sleeve: "64" },
-  { size: "XL" as const, chest: "110–116", length: "72", sleeve: "65" },
+  { size: "S" as const, length: "60", width: "58" },
+  { size: "M" as const, length: "66", width: "64" },
+  { size: "L" as const, length: "70", width: "68" },
 ];
 
-const black = { id: "black", name: "Чорний", hex: "#111111" };
-const bone = { id: "bone", name: "Молочний", hex: "#E8E4DC" };
-const grey = { id: "grey", name: "Сірий", hex: "#B8B6B1" };
-const burgundy = { id: "burgundy", name: "Бордо", hex: "#6B2430" };
+const sizeChartTee = [
+  { size: "S" as const, length: "66", width: "56" },
+  { size: "M" as const, length: "68", width: "60" },
+  { size: "L" as const, length: "70", width: "64" },
+  { size: "XL" as const, length: "72", width: "66" },
+];
+
+const black = { id: "black", name: "Black", nameUk: "Чорний", hex: "#111111" };
+const bone = { id: "bone", name: "Bone", nameUk: "Молочний", hex: "#E8E4DC" };
+const burgundy = {
+  id: "burgundy",
+  name: "Burgundy",
+  nameUk: "Бордо",
+  hex: "#6B2430",
+};
+const coral = { id: "coral", name: "Coral", nameUk: "Корал", hex: "#D4786A" };
+const blue = { id: "blue", name: "Blue", nameUk: "Синій", hex: "#1E3A5F" };
+const white = { id: "white", name: "White", nameUk: "Білий", hex: "#F4F2EE" };
 
 const knitDetails = [
-  "В’язаний оверсайз-светер",
+  "Oversized knitted sweater",
+  "Portrait print on front, text on back",
+  "Wash at 30°C, inside out",
+  "Made in Ukraine",
+];
+
+const knitDetailsUk = [
+  "В’язаний оверсайз-светр",
   "Принт портрета спереду, текст ззаду",
   "Прати при 30°C, вивернути навиворіт",
   "Зроблено в Україні",
@@ -45,146 +72,147 @@ export const DEMO_PRODUCTS: Product[] = [
     id: "p-shevchenko",
     slug: "shevchenko-knitted-sweater",
     name: "Shevchenko knitted sweater",
+    nameUk: "Светр Шевченко",
     category: "sweaters",
-    figure: "Тарас Шевченко",
+    figure: "Taras Shevchenko",
+    figureUk: "Тарас Шевченко",
     description:
-      "В’язаний оверсайз-светер з портретом Тараса Шевченка. На спині — рядки з «Думи мої…».",
+      "Oversized knitted sweater with a portrait of Taras Shevchenko. Lines from “My Thoughts…” on the back.",
+    descriptionUk:
+      "В’язаний оверсайз-светр з портретом Тараса Шевченка. На спині — рядки з «Думи мої…».",
     details: knitDetails,
-    price: 2500,
-    colors: [bone, grey, burgundy],
+    detailsUk: knitDetailsUk,
+    price: 3000,
+    colors: [bone],
     sizes: [...sweaterSizes],
-    inventory: inv([bone, grey, burgundy], sweaterSizes, 10),
-    images: [
-      "/products/shevchenko-1.webp",
-      "/products/shevchenko-8.webp",
-      "/products/shevchenko-2.webp",
-      "/products/shevchenko-3.webp",
-      "/products/shevchenko-9.webp",
-      "/products/shevchenko-10.webp",
-      "/products/shevchenko-5.webp",
-      "/products/shevchenko-6.webp",
-    ],
+    inventory: inv([bone], sweaterSizes, 10),
+    images: galleryImages("shevchenko", ["/products/shevchenko-1.webp"]),
     featured: true,
     newArrival: true,
-    tags: ["шевченко", "портрет", "оверсайз"],
+    tags: ["шевченко", "shevchenko", "портрет", "оверсайз"],
     sizeChart: sizeChartSweater,
   },
   {
     id: "p-stus",
     slug: "stus-knitted-sweater",
     name: "Stus knitted sweater",
+    nameUk: "Светр Стус",
     category: "sweaters",
-    figure: "Василь Стус",
+    figure: "Vasyl Stus",
+    figureUk: "Василь Стус",
     description:
-      "Светер з портретом Василя Стуса. На спині — «Терпи, терпи — терпець тебе шліфує».",
+      "Sweater with Vasyl Stus. On the back: “Endure, endure — endurance shapes you.”",
+    descriptionUk:
+      "Светр з портретом Василя Стуса. На спині — «Терпи, терпи — терпець тебе шліфує».",
     details: knitDetails,
-    price: 2500,
-    colors: [bone, grey, burgundy, black],
+    detailsUk: knitDetailsUk,
+    price: 3000,
+    colors: [white],
     sizes: [...sweaterSizes],
-    inventory: inv([bone, grey, burgundy, black], sweaterSizes, 9),
-    images: [
-      "/products/stus-1.webp",
-      "/products/stus-8.webp",
-      "/products/stus-2.webp",
-      "/products/stus-3.webp",
-      "/products/stus-9.webp",
-      "/products/stus-10.webp",
-      "/products/stus-11.webp",
-      "/products/stus-burgundy-1.webp",
-      "/products/stus-burgundy-2.webp",
-    ],
+    inventory: inv([white], sweaterSizes, 9),
+    images: galleryImages("stus", ["/products/stus-1.webp"]),
     featured: true,
-    tags: ["стус", "портрет"],
+    tags: ["стус", "stus", "портрет"],
     sizeChart: sizeChartSweater,
   },
   {
     id: "p-kuzma",
     slug: "kuzma-knitted-sweater",
     name: "Kuzma knitted sweater",
+    nameUk: "Светр Кузьма",
     category: "sweaters",
-    figure: "Кузьма Скрябін",
-    description:
-      "Чорний в’язаний светер з експресивним портретом Кузьми — червоний, білий і чорний графічний принт.",
+    figure: "Kuzma Skryabin",
+    figureUk: "Кузьма Скрябін",
+    description: "Black knitted sweater with Kuzma — red outline graphic.",
+    descriptionUk:
+      "Чорний в’язаний светр з портретом Кузьми — червона обводка в графіці.",
     details: knitDetails,
-    price: 2500,
+    detailsUk: knitDetailsUk,
+    price: 3000,
     colors: [black],
     sizes: [...sweaterSizes],
     inventory: inv([black], sweaterSizes, 8),
-    images: [
-      "/products/kuzma-1.webp",
-      "/products/kuzma-2.webp",
-      "/products/kuzma-3.webp",
-      "/products/kuzma-4.webp",
-      "/products/kuzma-5.webp",
-      "/products/kuzma-6.webp",
-    ],
+    images: galleryImages("kuzma", ["/products/kuzma-1.webp"]),
     featured: true,
     newArrival: true,
-    tags: ["кузьма", "скрябін", "портрет"],
+    tags: ["кузьма", "kuzma", "скрябін", "портрет"],
     sizeChart: sizeChartSweater,
   },
   {
     id: "p-lesya",
     slug: "lesya-ukrainka-knitted-sweater",
     name: "Lesya Ukrainka knitted sweater",
+    nameUk: "Светр Леся Українка",
     category: "sweaters",
-    figure: "Леся Українка",
+    figure: "Lesya Ukrainka",
+    figureUk: "Леся Українка",
     description:
-      "Чорний светер з портретом Лесі Українки. Тихе, сильне висловлювання — без зайвого шуму.",
+      "Coral knitted sweater with Lesya Ukrainka. On the back: “So as not to cry, I laughed.”",
+    descriptionUk:
+      "Кораловий в’язаний светр з портретом Лесі Українки. На спині — «Щоб не плакать, я сміялась.»",
     details: knitDetails,
-    price: 2500,
-    colors: [black, burgundy],
+    detailsUk: knitDetailsUk,
+    price: 3000,
+    colors: [coral],
     sizes: [...sweaterSizes],
-    inventory: inv([black, burgundy], sweaterSizes, 7),
-    images: [
-      "/products/lesya-1.webp",
-      "/products/lesya-3.webp",
-      "/products/lesya-2.webp",
-      "/products/lesya-4.webp",
-      "/products/lesya-5.webp",
-      "/products/lesya-6.webp",
-    ],
+    inventory: inv([coral], sweaterSizes, 7),
+    images: galleryImages("lesya", ["/products/lesya-1.webp"]),
     featured: true,
-    tags: ["леся", "портрет"],
+    tags: ["леся", "lesya", "портрет"],
     sizeChart: sizeChartSweater,
   },
   {
     id: "p-kuzma-tee",
     slug: "kuzma-skryabin-tee",
     name: "Kuzma Skryabin tee",
+    nameUk: "Футболка Кузьма Скрябін",
     category: "tshirts",
-    figure: "Кузьма Скрябін",
+    figure: "Kuzma Skryabin",
+    figureUk: "Кузьма Скрябін",
     description:
+      "Oversized tee with KUZMA / Skryabin graphic. Hand-style text on the back.",
+    descriptionUk:
       "Оверсайз-футболка з графікою KUZMA / Скрябін. На спині — текст у рукописному стилі.",
     details: [
+      "Oversized fit",
+      "100% cotton · ~200 g/m²",
+      "DTF print · washed look",
+      "Wash at 30°C, inside out",
+      "Made in Ukraine",
+    ],
+    detailsUk: [
       "Оверсайз крій",
-      "Принт спереду і ззаду",
-      "Прати при 30°C",
+      "100% бавовна · щільність ~200 г/м²",
+      "Друк DTF · washed-ефект",
+      "Прати при 30°C, вивернути навиворіт",
       "Зроблено в Україні",
     ],
-    price: 1800,
+    price: 1999,
     colors: [black],
-    sizes: [...sweaterSizes],
-    inventory: inv([black], sweaterSizes, 12),
-    images: [
-      "/products/kuzma-tee-1.webp",
-      "/products/kuzma-tee-2.webp",
-      "/products/kuzma-tee-3.webp",
-      "/products/kuzma-tee-4.webp",
-      "/products/kuzma-tee-5.webp",
-    ],
+    sizes: [...teeSizes],
+    inventory: inv([black], teeSizes, 12),
+    images: galleryImages("kuzma-tee", ["/products/kuzma-tee-1.webp"]),
     newArrival: true,
-    tags: ["кузьма", "футболка"],
-    sizeChart: sizeChartSweater,
+    tags: ["кузьма", "футболка", "tee", "скрябін"],
+    sizeChart: sizeChartTee,
   },
   {
     id: "p-volya-scarf",
     slug: "freedom-scarf",
     name: "Freedom scarf",
+    nameUk: "Шарф Воля",
     category: "scarves",
     description:
+      "Knitted “ВОЛЯ” (Freedom) scarf with black graphics on a light ground.",
+    descriptionUk:
       "В’язаний шарф «ВОЛЯ» з чорною графікою на світлому тлі. Теплий акцент колекції.",
     details: [
+      "Knitted accessory",
+      "“ВОЛЯ” print and icons",
+      "One size",
+      "Made in Ukraine",
+    ],
+    detailsUk: [
       "В’язаний аксесуар",
       "Принт «ВОЛЯ» та іконки",
       "Один розмір",
@@ -194,14 +222,80 @@ export const DEMO_PRODUCTS: Product[] = [
     colors: [bone],
     sizes: [...scarfSizes],
     inventory: inv([bone], scarfSizes, 20),
-    images: [
-      "/products/volya-scarf-1.webp",
-      "/products/volya-scarf-2.webp",
-      "/products/volya-scarf-3.webp",
-      "/products/volya-scarf-4.webp",
-    ],
+    images: galleryImages("freedom-scarf", ["/products/volya-scarf-1.webp"]),
     featured: true,
-    tags: ["воля", "шарф", "аксесуар"],
+    tags: ["воля", "freedom", "шарф", "scarf"],
+  },
+  {
+    id: "p-chornovil",
+    slug: "chornovil-knitted-sweater",
+    name: "Chornovil knitted sweater",
+    nameUk: "Светр Чорновіл",
+    category: "sweaters",
+    figure: "Vyacheslav Chornovil",
+    figureUk: "В’ячеслав Чорновіл",
+    description: "Red oversized knitted sweater with Vyacheslav Chornovil.",
+    descriptionUk:
+      "Червоний в’язаний оверсайз-светр з портретом В’ячеслава Чорновола.",
+    details: knitDetails,
+    detailsUk: knitDetailsUk,
+    price: 3000,
+    colors: [burgundy],
+    sizes: [...sweaterSizes],
+    inventory: inv([burgundy], sweaterSizes, 6),
+    images: galleryImages("chornovil", ["/products/galleries/chornovil/01.jpg"]),
+    featured: true,
+    tags: ["чорновіл", "chornovil", "портрет"],
+    sizeChart: sizeChartSweater,
+  },
+  {
+    id: "p-kostenko",
+    slug: "kostenko-knitted-sweater",
+    name: "Kostenko knitted sweater",
+    nameUk: "Светр Костенко",
+    category: "sweaters",
+    figure: "Lina Kostenko",
+    figureUk: "Ліна Костенко",
+    description:
+      "Black knitted sweater with a white outline portrait of Lina Kostenko.",
+    descriptionUk:
+      "Чорний в’язаний светр з білою обводкою портрета Ліни Костенко.",
+    details: knitDetails,
+    detailsUk: knitDetailsUk,
+    price: 3000,
+    colors: [black],
+    sizes: [...sweaterSizes],
+    inventory: inv([black], sweaterSizes, 6),
+    images: galleryImages("kostenko", ["/products/galleries/kostenko/01.jpg"]),
+    featured: true,
+    newArrival: true,
+    tags: ["костенко", "kostenko", "портрет"],
+    sizeChart: sizeChartSweater,
+  },
+  {
+    id: "p-lobanovskyi",
+    slug: "lobanovskyi-knitted-sweater",
+    name: "Lobanovskyi knitted sweater",
+    nameUk: "Светр Лобановський",
+    category: "sweaters",
+    figure: "Valeriy Lobanovskyi",
+    figureUk: "Валерій Лобановський",
+    description: "Blue oversized knitted sweater with Valeriy Lobanovskyi.",
+    descriptionUk:
+      "Синій в’язаний оверсайз-светр з портретом Валерія Лобановського.",
+    details: knitDetails,
+    detailsUk: knitDetailsUk,
+    price: 3000,
+    colors: [blue],
+    sizes: [...sweaterSizes],
+    inventory: inv([blue], sweaterSizes, 5),
+    images: galleryImages("lobanovskyi", [
+      "/products/galleries/lobanovskyi/01.jpg",
+    ]),
+    featured: true,
+    newArrival: true,
+    tags: ["лобановський", "lobanovskyi", "портрет"],
+    sizeChart: sizeChartSweater,
   },
 ];
 
@@ -211,7 +305,7 @@ export const DEMO_REVIEWS: Review[] = [
     productId: "p-shevchenko",
     author: "Олена",
     rating: 5,
-    text: "Светер ідеальний — тканина м’яка, принт тримається. Ношу майже щодня.",
+    text: "Светр ідеальний — тканина м’яка, принт тримається. Ношу майже щодня.",
     date: "2026-02-12",
     city: "Київ",
   },
@@ -279,11 +373,12 @@ export const DEMO_MENTIONS: InstagramMention[] = [
   },
 ];
 
+/** Admin / legacy UA labels — prefer next-intl Categories in storefront */
 export const CATEGORY_LABELS: Record<string, string> = {
   sweaters: "Светри",
   tshirts: "Футболки",
   scarves: "Шарфи",
-  all: "Усе",
+  all: "Весь товар",
 };
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
@@ -295,29 +390,21 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   cancelled: "Скасовано",
 };
 
-export const FAQ_ANSWERS: { q: RegExp; a: string }[] = [
-  {
-    q: /доставк|нова\s*пошт|скільки\s*їде|shipping/i,
-    a: "Доставка Новою Поштою по Україні — 1–3 дні після відправки. Відправка протягом 1–2 робочих днів після оплати.",
-  },
-  {
-    q: /оплат|картк|apple|google\s*pay|stripe/i,
-    a: "Приймаємо картку Visa/Mastercard, Apple Pay та Google Pay. Оплата безпечна (демо-режим на сайті).",
-  },
-  {
-    q: /поверн|обмін|return|refund/i,
-    a: "Повернення протягом 14 днів, якщо річ без слідів носіння й зі збереженими бирками. Деталі — на сторінці «Повернення».",
-  },
-  {
-    q: /розмір|size|сітк|таблиц/i,
-    a: "На кожній картці товару є таблиця розмірів. Светри — оверсайз: якщо хочете щільніше, беріть розмір менше.",
-  },
-  {
-    q: /догляд|прат|прання|wash/i,
-    a: "Прати при 30°C, вивернути навиворіт, без відбілювача. Не сушити в барабані на високій температурі.",
-  },
-  {
-    q: /контакт|телеграм|instagram|написати/i,
-    a: "Instagram: @blancoone. Якщо питання складне — залиште email, і я передам тікет у Telegram команді.",
-  },
+/** FAQ matchers → Support message keys (answers live in messages/*.json) */
+export const FAQ_PATTERNS: {
+  q: RegExp;
+  key:
+    | "faqShipping"
+    | "faqPayment"
+    | "faqReturns"
+    | "faqSize"
+    | "faqCare"
+    | "faqContact";
+}[] = [
+  { q: /доставк|нова\s*пошт|скільки\s*їде|shipping|delivery|nova\s*poshta/i, key: "faqShipping" },
+  { q: /оплат|картк|apple|google\s*pay|stripe|payment|card|pay/i, key: "faqPayment" },
+  { q: /поверн|обмін|return|refund|exchange/i, key: "faqReturns" },
+  { q: /розмір|size|сітк|таблиц|fit|sizing/i, key: "faqSize" },
+  { q: /догляд|прат|прання|wash|care|laundry/i, key: "faqCare" },
+  { q: /контакт|телеграм|instagram|написати|contact|telegram|write/i, key: "faqContact" },
 ];

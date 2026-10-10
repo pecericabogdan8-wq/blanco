@@ -1,37 +1,38 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FAQ_ANSWERS } from "@/lib/demo-data";
-import type { ChatMessage, SupportTicket } from "@/lib/types";
+import { FAQ_PATTERNS } from "@/lib/demo-data";
+import type { ChatMessage } from "@/lib/types";
 import { useShopStore } from "@/store/shop-store";
 import { cn } from "@/lib/utils";
 
-function answerFaq(text: string): string | null {
-  for (const item of FAQ_ANSWERS) {
-    if (item.q.test(text)) return item.a;
-  }
-  return null;
-}
-
 export function SupportChat() {
+  const t = useTranslations("Support");
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [email, setEmail] = useState("");
   const [pendingEscalate, setPendingEscalate] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "Привіт! Я AI-підтримка blanco. Запитайте про доставку, оплату, розміри чи повернення. Якщо не зможу допомогти — передам тікет у Telegram.",
-      ts: 0,
-    },
-  ]);
-  const addTicket = useShopStore((s) => s.addTicket);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const user = useShopStore((s) => s.user);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const welcomeSet = useRef(false);
+
+  useEffect(() => {
+    if (welcomeSet.current) return;
+    welcomeSet.current = true;
+    setMessages([
+      {
+        id: "welcome",
+        role: "assistant",
+        text: t("welcome"),
+        ts: 0,
+      },
+    ]);
+  }, [t]);
 
   useEffect(() => {
     if (user?.email) setEmail(user.email);
@@ -41,48 +42,40 @@ export function SupportChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
-  async function escalate(message: string) {
-    const ticket: SupportTicket = {
-      id: `T-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      email: email.trim() || "anonymous@blanco.ua",
-      message,
-      status: "escalated",
-      telegramSent: false,
-    };
+  function answerFaq(text: string): string | null {
+    for (const item of FAQ_PATTERNS) {
+      if (item.q.test(text)) return t(item.key);
+    }
+    return null;
+  }
 
+  async function escalate(message: string) {
     try {
       const res = await fetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: ticket.email,
-          message: ticket.message,
-          ticketId: ticket.id,
+          email: email.trim() || "anonymous@blanco.ua",
+          message,
         }),
       });
       const data = await res.json();
-      ticket.telegramSent = Boolean(data.telegramSent);
-      addTicket(ticket);
       setMessages((m) => [
         ...m,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          text: data.telegramSent
-            ? "Передала ваше питання команді в Telegram. Відповімо на email якнайшвидше."
-            : "Створила тікет (демо). Telegram не налаштовано — див. .env.example. Команда побачить запит в адмінці.",
+          text: data.telegramSent ? t("escalatedTelegram") : t("escalatedDb"),
           ts: Date.now(),
         },
       ]);
     } catch {
-      addTicket(ticket);
       setMessages((m) => [
         ...m,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          text: "Тікет збережено локально. Спробуйте ще раз пізніше для відправки в Telegram.",
+          text: t("escalateFail"),
           ts: Date.now(),
         },
       ]);
@@ -99,7 +92,12 @@ export function SupportChat() {
       { id: `u-${Date.now()}`, role: "user", text, ts: Date.now() },
     ]);
 
-    if (pendingEscalate || /оператор|людин|менеджер|telegram/i.test(text)) {
+    if (
+      pendingEscalate ||
+      /оператор|людин|менеджер|telegram|operator|human|manager|agent|forward|передати/i.test(
+        text
+      )
+    ) {
       if (!email.trim() && !pendingEscalate) {
         setPendingEscalate(true);
         setMessages((m) => [
@@ -107,7 +105,7 @@ export function SupportChat() {
           {
             id: `a-${Date.now()}`,
             role: "assistant",
-            text: "Залиште email у полі нижче й натисніть надіслати ще раз — передам тікет.",
+            text: t("needEmail"),
             ts: Date.now(),
           },
         ]);
@@ -131,7 +129,7 @@ export function SupportChat() {
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          text: "Не знайшла точної відповіді. Можу передати питання команді в Telegram — вкажіть email і напишіть «передати» або повторіть питання.",
+          text: t("noAnswer"),
           ts: Date.now(),
         },
       ]);
@@ -144,23 +142,22 @@ export function SupportChat() {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed right-4 bottom-4 z-50 flex items-center gap-2 bg-ink px-4 py-3 text-sm text-mist shadow-lg transition duration-150 hover:bg-ink/90 active:scale-[0.98]",
+          "fixed right-3 bottom-3 z-40 flex size-11 items-center justify-center bg-ink text-mist shadow-lg transition duration-150 hover:bg-ink/90 active:scale-[0.98] sm:right-4 sm:bottom-4",
           open && "pointer-events-none opacity-0"
         )}
-        aria-label="Відкрити підтримку"
+        aria-label={t("open")}
       >
-        <MessageCircle className="size-4" />
-        Підтримка
+        <MessageCircle className="size-5" />
       </button>
 
       {open && (
-        <div className="fixed right-4 bottom-4 z-50 flex h-[min(520px,70vh)] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-border bg-mist shadow-2xl">
+        <div className="fixed right-3 bottom-3 z-50 flex h-[min(520px,70vh)] w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-lg border border-border bg-mist shadow-2xl sm:right-4 sm:bottom-4">
           <div className="flex items-center justify-between bg-ink px-4 py-3 text-mist">
             <div>
               <p className="font-display text-lg font-semibold">blanco help</p>
-              <p className="text-[11px] text-mist/60">AI · ескалація в Telegram</p>
+              <p className="text-[11px] text-mist/60">{t("subtitle")}</p>
             </div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Закрити">
+            <button type="button" onClick={() => setOpen(false)} aria-label={t("close")}>
               <X className="size-5" />
             </button>
           </div>
@@ -184,7 +181,7 @@ export function SupportChat() {
             {(pendingEscalate || !user) && (
               <Input
                 type="email"
-                placeholder="Email для відповіді"
+                placeholder={t("emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-8 text-sm"
@@ -194,13 +191,13 @@ export function SupportChat() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ваше питання…"
+                placeholder={t("questionPlaceholder")}
                 className="h-9"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void send();
                 }}
               />
-              <Button size="icon" onClick={() => void send()} aria-label="Надіслати">
+              <Button size="icon" onClick={() => void send()} aria-label={t("send")}>
                 <Send className="size-4" />
               </Button>
             </div>

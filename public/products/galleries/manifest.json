@@ -1,0 +1,247 @@
+{
+  "lesya": {
+    "images": [
+      "/products/galleries/lesya/01.jpg",
+      "/products/galleries/lesya/02.jpg",
+      "/products/galleries/lesya/03.jpg",
+      "/products/galleries/lesya/04.jpg"
+    ],
+    "primary": "/products/galleries/lesya/01.jpg",
+    "sources": [
+      "items/IMG_8790.PNG",
+      "items/IMG_8791.JPEG",
+      "items/IMG_8796.PNG",
+      "items/IMG_8798.JPEG"
+    ]
+  },
+  "stus": {
+    "images": [
+      "/products/galleries/stus/01.jpg",
+      "/products/galleries/stus/02.jpg",
+      "/products/galleries/stus/03.jpg",
+      "/products/galleries/stus/04.jpg",
+      "/products/galleries/stus/05.jpg",
+      "/products/galleries/stus/06.jpg",
+      "/products/galleries/stus/07.jpg",
+      "/products/galleries/stus/08.jpg",
+      "/products/galleries/stus/09.jpg",
+      "/products/galleries/stus/10.jpg",
+      "/products/galleries/stus/11.jpg",
+      "/products/galleries/stus/12.jpg",
+      "/products/galleries/stus/13.jpg",
+      "/products/galleries/stus/14.jpg",
+      "/products/galleries/stus/15.jpg",
+      "/products/galleries/stus/16.jpg",
+      "/products/galleries/stus/17.jpg"
+    ],
+    "primary": "/products/galleries/stus/01.jpg",
+    "sources": [
+      "items/IMG_3063.JPG",
+      "items/IMG_3102.JPG",
+      "items/IMG_3154.JPG",
+      "items/IMG_3155.JPG",
+      "items/IMG_3168.JPG",
+      "items/IMG_3169.JPG",
+      "items/IMG_3180.JPG",
+      "items/IMG_3182.JPG",
+      "items/IMG_3183.JPG",
+      "items/IMG_3184.JPG",
+      "items/IMG_3185.JPG",
+      "items/IMG_3186.JPG",
+      "items/IMG_3187.JPG",
+      "items/IMG_3188.JPG",
+      "items/IMG_3189.JPG",
+      "items/IMG_3190.JPG",
+      "items/IMG_3296.JPG"
+    ]
+  },
+  "chornovil": {
+    "images": [
+      "/products/galleries/chornovil/01.jpg",
+      "/products/galleries/chornovil/02.jpg",
+      "/products/galleries/chornovil/03.jpg",
+      "/products/galleries/chornovil/04.jpg",
+      "/products/galleries/chornovil/05.jpg",
+      "/products/galleries/chornovil/06.jpg",
+      "/products/galleries/chornovil/07.jpg",
+      "/products/galleries/chornovil/08.jpg",
+      "/products/galleries/chornovil/09.jpg",
+      "/products/galleries/chornovil/10.jpg",
+      "/products/galleries/chornovil/11.jpg"
+    ],
+    "primary": "/products/galleries/chornovil/01.jpg",
+    "sources": [
+      "items/IMG_3062.JPG",
+      "items/IMG_3150.JPG",
+      "items/IMG_3151.JPG",
+      "items/IMG_3170.JPG",
+      "items/IMG_3171.JPG",
+      "items/IMG_3226.JPG",
+      "items/IMG_3228.JPG",
+      "items/IMG_3229.JPG",
+      "items/IMG_3232.JPG",
+      "items/IMG_3233.JPG",
+      "items/IMG_3237.JPG"
+    ]
+  },
+  "kuzma": {
+    "images": [
+      "/products/galleries/kuzma/01.jpg",
+      "/products/galleries/kuzma/02.jpg",
+      "/products/galleries/kuzma/03.jpg",
+      "/products/galleries/kuzma/04.jpg",
+      "/products/galleries/kuzma/05.jpg",
+      "/products/galleries/kuzma/06.jpg",
+      "/products/galleries/kuzma/07.jpg",
+      "/products/galleries/kuzma/08.jpg",
+      "/products/galleries/kuzma/09.jpg"
+    ],
+    "primary": "/products/galleries/kuzma/01.jpg",
+    "sources": [
+      "items/IMG_3156.JPG",
+      "items/IMG_3157.JPG",
+      "items/IMG_3160.JPG",
+      "items/IMG_3161.JPG",
+      "items/IMG_3216.JPG",
+      "items/IMG_3217.JPG",
+      "items/IMG_3320.JPG",
+      "items/IMG_3321.JPG",
+      "items/IMG_3322.JPG"
+    ]
+  },
+  "kostenko": {
+    "images": [
+      "/products/galleries/kostenko/01.jpg",
+      "/products/galleries/kostenko/02.jpg",
+      "/products/galleries/kostenko/03.jpg",
+      "/products/galleries/kostenko/04.jpg",
+      "/products/galleries/kostenko/05.jpg",
+      "/products/galleries/kostenko/06.jpg",
+      "/products/galleries/kostenko/07.jpg",
+      "/products/galleries/kostenko/08.jpg",
+      "/products/galleries/kostenko/09.jpg",
+      "/products/galleries/kostenko/10.jpg",
+      "/products/galleries/kostenko/11.jpg",
+      "/products/galleries/kostenko/12.jpg",
+      "/products/galleries/kostenko/13.jpg",
+      "/products/galleries/kostenko/14.jpg",
+      "/products/galleries/kostenko/15.jpg",
+      "/products/galleries/kostenko/16.jpg"
+    ],
+    "primary": "/products/galleries/kostenko/01.jpg",
+    "sources": [
+      "items/IMG_3103.JPG",
+      "items/IMG_3104.JPG",
+      "items/IMG_3106.JPG",
+      "items/IMG_3174.JPG",
+      "items/IMG_3218.JPG",
+      "items/IMG_3219.JPG",
+      "items/IMG_3220.JPG",
+      "items/IMG_3221.JPG",
+      "items/IMG_3222.JPG",
+      "items/IMG_3225.JPG",
+      "items/IMG_3243.JPG",
+      "items/IMG_3244.JPG",
+      "items/IMG_3247.JPG",
+      "items/IMG_3248.JPG",
+      "items/IMG_3249.JPG",
+      "items/IMG_3250.JPG"
+    ]
+  },
+  "shevchenko": {
+    "images": [
+      "/products/galleries/shevchenko/01.jpg",
+      "/products/galleries/shevchenko/02.jpg",
+      "/products/galleries/shevchenko/03.jpg",
+      "/products/galleries/shevchenko/04.jpg",
+      "/products/galleries/shevchenko/05.jpg",
+      "/products/galleries/shevchenko/06.jpg",
+      "/products/galleries/shevchenko/07.jpg",
+      "/products/galleries/shevchenko/08.jpg",
+      "/products/galleries/shevchenko/09.jpg",
+      "/products/galleries/shevchenko/10.jpg",
+      "/products/galleries/shevchenko/11.jpg",
+      "/products/galleries/shevchenko/12.jpg",
+      "/products/galleries/shevchenko/13.jpg"
+    ],
+    "primary": "/products/galleries/shevchenko/01.jpg",
+    "sources": [
+      "items/IMG_3059.JPG",
+      "items/IMG_3060.JPG",
+      "items/IMG_3101.JPG",
+      "items/IMG_3152.JPG",
+      "items/IMG_3153.JPG",
+      "items/IMG_3196.JPG",
+      "items/IMG_3197.JPG",
+      "items/IMG_3198.JPG",
+      "items/IMG_3201.JPG",
+      "items/IMG_3202.JPG",
+      "items/IMG_3203.JPG",
+      "items/IMG_3204.JPG",
+      "items/IMG_3205.JPG"
+    ]
+  },
+  "lobanovskyi": {
+    "images": [
+      "/products/galleries/lobanovskyi/01.jpg",
+      "/products/galleries/lobanovskyi/02.jpg",
+      "/products/galleries/lobanovskyi/03.jpg"
+    ],
+    "primary": "/products/galleries/lobanovskyi/01.jpg",
+    "sources": [
+      "items/photo_2026-10-08_15-46-55.JPG",
+      "items/photo_2026-10-08_15-46-55.jpg",
+      "items/photo_2026-10-08_15-47-12.JPG"
+    ]
+  },
+  "freedom-scarf": {
+    "images": [
+      "/products/galleries/freedom-scarf/01.jpg",
+      "/products/galleries/freedom-scarf/02.jpg",
+      "/products/galleries/freedom-scarf/03.jpg",
+      "/products/galleries/freedom-scarf/04.jpg"
+    ],
+    "primary": "/products/galleries/freedom-scarf/01.jpg",
+    "sources": [
+      "items/IMG_3162.JPG",
+      "items/IMG_3163.JPG",
+      "items/IMG_3166.JPG",
+      "items/IMG_3300.JPG"
+    ]
+  },
+  "kuzma-tee": {
+    "images": [
+      "/products/galleries/kuzma-tee/01.jpg",
+      "/products/galleries/kuzma-tee/02.jpg",
+      "/products/galleries/kuzma-tee/03.jpg",
+      "/products/galleries/kuzma-tee/04.jpg",
+      "/products/galleries/kuzma-tee/05.jpg",
+      "/products/galleries/kuzma-tee/06.jpg",
+      "/products/galleries/kuzma-tee/07.jpg",
+      "/products/galleries/kuzma-tee/08.jpg",
+      "/products/galleries/kuzma-tee/09.jpg",
+      "/products/galleries/kuzma-tee/10.jpg",
+      "/products/galleries/kuzma-tee/11.jpg",
+      "/products/galleries/kuzma-tee/12.jpg",
+      "/products/galleries/kuzma-tee/13.jpg",
+      "/products/galleries/kuzma-tee/14.jpg"
+    ],
+    "primary": "/products/galleries/kuzma-tee/01.jpg",
+    "sources": [
+      "items/IMG_3061.JPG",
+      "items/IMG_3172.JPG",
+      "items/IMG_3173.JPG",
+      "items/IMG_3175.JPG",
+      "items/IMG_3323.JPG",
+      "items/IMG_3324.JPG",
+      "items/IMG_3325.JPG",
+      "items/IMG_3326.JPG",
+      "items/IMG_3327.JPG",
+      "items/IMG_3328.JPG",
+      "items/IMG_3329.JPG",
+      "items/IMG_3330.JPG",
+      "items/IMG_3331.JPG",
+      "items/IMG_3332.JPG"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.env
+.env.local
+*.log
+items
+eng.traineddata
+ukr.traineddata
+gallery-build.log
+build-galleries.log
+share-url.txt
+share-tunnel.log
+public/products/*.tmp.webp
+AgentStores
+.cursor

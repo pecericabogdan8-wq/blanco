@@ -2,21 +2,27 @@ export type Category = "sweaters" | "tshirts" | "scarves";
 
 export type ProductColor = {
   id: string;
+  /** English */
   name: string;
+  nameUk?: string;
   hex: string;
 };
 
 export type ProductSize = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "ONE";
 
-export type InventoryKey = string; // `${colorId}:${size}`
+export type InventoryKey = string;
 
 export type Product = {
   id: string;
   slug: string;
+  /** English (DB primary) */
   name: string;
+  nameUk?: string;
   category: Category;
   description: string;
+  descriptionUk?: string;
   details: string[];
+  detailsUk?: string[];
   price: number;
   salePrice?: number;
   colors: ProductColor[];
@@ -24,10 +30,21 @@ export type Product = {
   inventory: Record<InventoryKey, number>;
   images: string[];
   figure?: string;
+  figureUk?: string;
   featured?: boolean;
   newArrival?: boolean;
+  /** false = in admin trash (hidden from catalog, still openable from orders) */
+  active?: boolean;
+  /** ISO date — used for NEW badge (last 30 days) */
+  createdAt?: string;
   tags: string[];
-  sizeChart?: { size: ProductSize; chest: string; length: string; sleeve: string }[];
+  sizeChart?: {
+    size: ProductSize;
+    length: string;
+    width?: string;
+    chest?: string;
+    sleeve?: string;
+  }[];
 };
 
 export type CartItem = {
@@ -52,6 +69,10 @@ export type OrderItem = CartItem & {
   price: number;
   colorName: string;
   image: string;
+  /** Present while product row still exists (active or trash) — used for PDP link */
+  productSlug?: string | null;
+  /** active | trash | gone — gone = hard-deleted, no link */
+  productStatus?: "active" | "trash" | "gone";
 };
 
 export type Order = {

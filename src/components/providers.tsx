@@ -1,18 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { Toaster } from "sonner";
-import { useShopStore } from "@/store/shop-store";
+import { ShopBootstrap } from "@/components/shop/shop-bootstrap";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const setHydrated = useShopStore((s) => s.setHydrated);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, [setHydrated]);
-
   return (
     <>
+      <ShopBootstrap />
       {children}
       <Toaster
         position="top-center"

@@ -36,8 +36,28 @@ yarn-error.log*
 .env*
 !.env.example
 
+# local sqlite
+/prisma/*.db
+/prisma/*.db-journal
+
+# admin uploads (generated)
+/public/uploads/
+
+# build / OCR / temp artifacts
+*.log
+*.tmp.webp
+*.traineddata
+
+# huge PDF raster (regenerate via scripts if needed)
+/public/brand/portfolio-page.png
+
 # vercel
 .vercel
+
+# temporary public share (tunnel supervisor)
+share-url.txt
+share-status.txt
+share-tunnel*.log
 
 # typescript
 *.tsbuildinfo

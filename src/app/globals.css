@@ -4,6 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Responsive shop helpers */
+@layer utilities {
+  .product-grid {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .glass-cta {
+    width: min(100%, 16rem);
+    text-align: center;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -52,43 +66,43 @@
 }
 
 :root {
-  /* Portfolio blanco — warm white shop floor, charcoal type */
+  /* BlancoPortfolio — warm cream floor, umber/brown ink (not pure black) */
   --background: #f6f5f2;
-  --foreground: #111111;
+  --foreground: #2c241c;
   --card: #ffffff;
-  --card-foreground: #111111;
+  --card-foreground: #2c241c;
   --popover: #ffffff;
-  --popover-foreground: #111111;
-  --primary: #111111;
+  --popover-foreground: #2c241c;
+  --primary: #3a2c22;
   --primary-foreground: #f6f5f2;
   --secondary: #eceae6;
-  --secondary-foreground: #111111;
+  --secondary-foreground: #2c241c;
   --muted: #efeee9;
-  --muted-foreground: #6a6864;
+  --muted-foreground: #6a6258;
   --accent: #e7e5e0;
-  --accent-foreground: #111111;
+  --accent-foreground: #2c241c;
   --destructive: #a11d1d;
   --border: #e2e0db;
   --input: #e2e0db;
-  --ring: #3a3a3a;
-  --ink: #0e0e0e;
+  --ring: #5c4a3a;
+  --ink: #3a2c22;
   --mist: #ffffff;
   --pine: #2f3d36;
-  --steel: #5a5854;
-  --chart-1: #111111;
+  --steel: #5a534c;
+  --chart-1: #3a2c22;
   --chart-2: #6b2430;
-  --chart-3: #5a5854;
-  --chart-4: #6a6864;
+  --chart-3: #5a534c;
+  --chart-4: #6a6258;
   --chart-5: #8b6f5c;
   --radius: 0.125rem;
   --sidebar: #efeee9;
-  --sidebar-foreground: #111111;
-  --sidebar-primary: #111111;
+  --sidebar-foreground: #2c241c;
+  --sidebar-primary: #3a2c22;
   --sidebar-primary-foreground: #f6f5f2;
   --sidebar-accent: #eceae6;
-  --sidebar-accent-foreground: #111111;
+  --sidebar-accent-foreground: #2c241c;
   --sidebar-border: #e2e0db;
-  --sidebar-ring: #3a3a3a;
+  --sidebar-ring: #5c4a3a;
 }
 
 @layer base {
@@ -143,10 +157,19 @@
     overflow: hidden;
   }
   .img-zoom img {
-    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: center center;
+    transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .img-zoom:hover img {
     transform: scale(1.03);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .img-zoom img {
+      transition: none;
+    }
+    .img-zoom:hover img {
+      transform: none;
+    }
   }
   .pressable {
     transition: transform 0.15s ease-out, opacity 0.15s ease-out;
@@ -155,7 +178,7 @@
     transform: scale(0.985);
   }
   .shop-chip {
-    @apply inline-flex items-center justify-center border border-transparent px-3.5 py-2 text-sm tracking-wide transition-colors duration-150;
+    @apply inline-flex cursor-pointer items-center justify-center border border-transparent px-3.5 py-2 text-sm tracking-wide transition-colors duration-150;
   }
   .shop-chip-active {
     @apply bg-ink text-mist;
@@ -179,4 +202,64 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/*
+  Клікабельне = рука. Поза @layer + !important — інакше UA/preflight/утиліти
+  лишають default arrow на button/tab/accordion тощо.
+*/
+a[href]:not([aria-disabled="true"]),
+button:not(:disabled):not([aria-disabled="true"]),
+summary,
+label,
+label[for],
+select:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="checkbox"]:not([aria-disabled="true"]),
+[role="radio"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="link"]:not([aria-disabled="true"]),
+[role="combobox"]:not([aria-disabled="true"]),
+[data-slot="button"]:not(:disabled):not([aria-disabled="true"]),
+[data-slot="accordion-trigger"]:not([aria-disabled="true"]),
+[data-slot="tabs-trigger"]:not([aria-disabled="true"]):not([data-disabled]),
+[data-slot="checkbox"]:not([aria-disabled="true"]),
+[data-slot="radio-group-item"]:not([aria-disabled="true"]),
+[data-slot="select-trigger"]:not([aria-disabled="true"]),
+[data-slot="select-item"]:not([data-disabled]),
+[data-slot="dropdown-menu-trigger"],
+[data-slot="dropdown-menu-item"]:not([data-disabled]),
+[data-slot="dropdown-menu-checkbox-item"]:not([data-disabled]),
+[data-slot="dropdown-menu-radio-item"]:not([data-disabled]),
+[data-slot="dropdown-menu-sub-trigger"],
+[data-slot="dialog-trigger"],
+[data-slot="dialog-close"],
+[data-slot="dialog-overlay"],
+[data-slot="sheet-trigger"],
+[data-slot="sheet-close"],
+[data-slot="sheet-overlay"],
+[data-slot="label"],
+.shop-chip,
+.pressable,
+.img-zoom,
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="file"]:not(:disabled),
+input[type="image"]:not(:disabled) {
+  cursor: pointer !important;
+}
+
+button:disabled,
+[aria-disabled="true"],
+[data-disabled]:not([data-disabled="false"]),
+select:disabled,
+input:disabled,
+.disabled {
+  cursor: not-allowed !important;
 }

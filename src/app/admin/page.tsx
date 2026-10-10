@@ -637,7 +637,7 @@ export default function AdminPage() {
                       setForm((f) => ({ ...f, category: v as Category }))
                     }
                   >
-                    <SelectTrigger className="w-full bg-white">
+                    <SelectTrigger>
                       <SelectValue>
                         {(v) =>
                           CATEGORY_LABELS[String(v ?? "")] ?? String(v ?? "")

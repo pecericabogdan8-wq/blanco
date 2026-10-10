@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Package, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Package, Plus, Trash2 } from "lucide-react";
 import { ImageGalleryField } from "@/components/admin/image-gallery-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,23 +75,12 @@ const FLOW: OrderStatus[] = [
   "cancelled",
 ];
 
-const DEFAULT_DETAILS = [
-  "В’язаний оверсайз-светр",
-  "Принт портрета спереду, текст ззаду",
-  "Прати при 30°C, вивернути навиворіт",
-  "Зроблено в Україні",
-];
-
-function defaultSizeChart(sizesCsv: string): SizeChartRow[] {
-  return sizesCsv
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((size) => ({
-      size: size as ProductSize,
-      length: "",
-      width: "",
-    }));
+function emptySizeChart(sizesCsv: string): SizeChartRow[] {
+  return parseSizesCsv(sizesCsv).map((size) => ({
+    size: size as ProductSize,
+    length: "",
+    width: "",
+  }));
 }
 
 function parseSizesCsv(sizesCsv: string): string[] {
@@ -101,27 +90,21 @@ function parseSizesCsv(sizesCsv: string): string[] {
     .filter(Boolean);
 }
 
-function defaultStockBySize(sizesCsv: string, qty = 8): Record<string, number> {
-  return Object.fromEntries(parseSizesCsv(sizesCsv).map((s) => [s, qty]));
-}
-
 const emptyForm = () => ({
   name: "",
   slug: "",
-  category: "sweaters" as Category,
+  category: "" as Category | "",
   description: "",
   details: "",
-  price: "2500",
+  price: "",
   salePrice: "",
   figure: "",
-  colors: [
-    { key: "black", name: "Чорний", hex: "#111111" },
-  ] as FormColor[],
-  sizes: "S,M,L,XL",
-  stockBySize: defaultStockBySize("S,M,L,XL", 8),
+  colors: [] as FormColor[],
+  sizes: "",
+  stockBySize: {} as Record<string, string>,
   images: [] as string[],
   tags: "",
-  sizeChart: defaultSizeChart("S,M,L,XL") as SizeChartRow[],
+  sizeChart: [] as SizeChartRow[],
 });
 
 function linesToList(raw: string): string[] {
@@ -132,33 +115,29 @@ function linesToList(raw: string): string[] {
 }
 
 function productToForm(p: Product) {
-  const sizes = p.sizes.length ? p.sizes.join(",") : "M";
-  const primary = p.colors[0]?.id ?? "black";
-  const stockBySize: Record<string, number> = {};
+  const sizes = p.sizes.join(",");
+  const primary = p.colors[0]?.id;
+  const stockBySize: Record<string, string> = {};
   for (const s of p.sizes) {
-    stockBySize[s] = p.inventory[`${primary}:${s}`] ?? 0;
+    const qty = primary != null ? (p.inventory[`${primary}:${s}`] ?? 0) : 0;
+    stockBySize[s] = String(qty);
   }
   return {
     name: p.nameUk || p.name,
     slug: p.slug,
-    category: p.category,
+    category: p.category as Category | "",
     description: p.descriptionUk || p.description,
     details: (p.detailsUk ?? p.details ?? []).join("\n"),
     price: String(p.price),
     salePrice: p.salePrice != null ? String(p.salePrice) : "",
     figure: p.figureUk || p.figure || "",
-    colors: (p.colors.length
-      ? p.colors.map((c) => ({
-          key: c.id,
-          name: c.nameUk || c.name,
-          hex: c.hex,
-        }))
-      : [{ key: "black", name: "Чорний", hex: "#111111" }]) as FormColor[],
+    colors: p.colors.map((c) => ({
+      key: c.id,
+      name: c.nameUk || c.name,
+      hex: c.hex,
+    })) as FormColor[],
     sizes,
-    stockBySize:
-      Object.keys(stockBySize).length > 0
-        ? stockBySize
-        : defaultStockBySize(sizes, 0),
+    stockBySize,
     images: [...p.images],
     tags: (p.tags ?? []).join(", "),
     sizeChart: (p.sizeChart?.length
@@ -167,7 +146,7 @@ function productToForm(p: Product) {
           length: r.length ?? "",
           width: r.width ?? r.chest ?? "",
         }))
-      : defaultSizeChart(sizes)) as SizeChartRow[],
+      : emptySizeChart(sizes)) as SizeChartRow[],
   };
 }
 
@@ -183,11 +162,14 @@ export default function AdminPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [stockProductId, setStockProductId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("orders");
+  const [productsView, setProductsView] = useState<"catalog" | "trash">(
+    "catalog"
+  );
   const [newColor, setNewColor] = useState({
     key: "",
     name: "",
     hex: "#E8E4DC",
-    stock: 0,
+    stock: "",
   });
   const [newSize, setNewSize] = useState("");
   const [customColor, setCustomColor] = useState({
@@ -263,6 +245,10 @@ export default function AdminPage() {
       toast.error("Вкажіть slug");
       return;
     }
+    if (!form.category) {
+      toast.error("Оберіть категорію");
+      return;
+    }
     if (!form.description.trim()) {
       toast.error("Вкажіть опис");
       return;
@@ -301,8 +287,7 @@ export default function AdminPage() {
       }
     }
 
-    const details = linesToList(form.details);
-    const detailLines = details.length ? details : DEFAULT_DETAILS;
+    const detailLines = linesToList(form.details);
     const tags = form.tags
       .split(",")
       .map((s) => s.trim())
@@ -317,7 +302,11 @@ export default function AdminPage() {
 
     const colors = form.colors.map((c) => {
       const preset = paletteColorForKey(c.key);
-      const name = (c.name.trim() || preset?.name || colorNameFromKey(c.key)).trim();
+      const name = (
+        c.name.trim() ||
+        preset?.name ||
+        colorNameFromKey(c.key)
+      ).trim();
       return {
         id: c.key,
         name,
@@ -328,7 +317,8 @@ export default function AdminPage() {
 
     const stockBySize: Record<string, number> = {};
     for (const s of sizes) {
-      stockBySize[s] = Math.max(0, Number(form.stockBySize[s]) || 0);
+      const raw = String(form.stockBySize[s] ?? "").trim();
+      stockBySize[s] = Math.max(0, raw === "" ? 0 : Number(raw) || 0);
     }
 
     const inventory: Record<string, number> = {};
@@ -429,9 +419,9 @@ export default function AdminPage() {
 
   function syncSizes(sizesCsv: string, prev = form) {
     const keys = parseSizesCsv(sizesCsv);
-    const stockBySize: Record<string, number> = {};
+    const stockBySize: Record<string, string> = {};
     for (const s of keys) {
-      stockBySize[s] = prev.stockBySize[s] ?? 8;
+      stockBySize[s] = prev.stockBySize[s] ?? "";
     }
     return {
       ...prev,
@@ -515,7 +505,6 @@ export default function AdminPage() {
               [
                 ["orders", `Замовлення (${orders.length})`],
                 ["products", `Товари (${products.length})`],
-                ["trash", `Смітник (${trash.length})`],
                 ["stock", "Склад"],
                 ["tickets", `Тікети (${tickets.length})`],
               ] as const
@@ -523,7 +512,10 @@ export default function AdminPage() {
               <TabsTrigger
                 key={v}
                 value={v}
-                className="rounded-none border border-border bg-white px-4 py-2 data-active:bg-ink data-active:text-mist"
+                className="rounded-none border border-border bg-white px-3 py-2 text-sm data-active:bg-ink data-active:text-mist sm:px-4"
+                onClick={() => {
+                  if (v === "products") setProductsView("catalog");
+                }}
               >
                 {label}
               </TabsTrigger>
@@ -596,17 +588,167 @@ export default function AdminPage() {
             ))}
           </TabsContent>
 
-          <TabsContent value="products" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-            <div className="border border-border bg-white p-5">
+          <TabsContent value="products" className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div
+                className="inline-flex w-full max-w-md rounded-none border border-border bg-white p-0.5 sm:w-auto"
+                role="tablist"
+                aria-label="Розділ товарів"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={productsView === "catalog"}
+                  onClick={() => setProductsView("catalog")}
+                  className={cn(
+                    "flex-1 px-3 py-2 text-sm transition sm:flex-none sm:px-4",
+                    productsView === "catalog"
+                      ? "bg-ink text-mist"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Каталог ({products.length})
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={productsView === "trash"}
+                  onClick={() => setProductsView("trash")}
+                  className={cn(
+                    "inline-flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-sm transition sm:flex-none sm:px-4",
+                    productsView === "trash"
+                      ? "bg-ink text-mist"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Trash2 className="size-3.5 shrink-0" />
+                  Смітник ({trash.length})
+                </button>
+              </div>
+              {productsView === "trash" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => setProductsView("catalog")}
+                >
+                  <ArrowLeft className="size-3.5" />
+                  До каталогу
+                </Button>
+              )}
+            </div>
+
+            {productsView === "trash" ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Товари у смітнику приховані з каталогу. З історії замовлень
+                  сторінку ще можна відкрити (без купівлі). «Видалити назавжди» —
+                  повне стирання з БД + архів-знімок на бекенді; у замовленнях
+                  лишається лише текст/фото, без посилання.
+                </p>
+                {trash.length === 0 && (
+                  <p className="border border-dashed border-border bg-white p-8 text-center text-muted-foreground sm:p-10">
+                    Смітник порожній
+                  </p>
+                )}
+                <ul className="grid gap-2 sm:grid-cols-1">
+                  {trash.map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex flex-col gap-3 border border-border bg-white p-3 sm:flex-row sm:items-start"
+                    >
+                      <div className="relative size-16 shrink-0 overflow-hidden bg-[#eee]">
+                        {p.images[0] && (
+                          <Image
+                            src={p.images[0]}
+                            alt=""
+                            fill
+                            unoptimized
+                            className="object-cover opacity-60"
+                            sizes="64px"
+                          />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">
+                          {p.nameUk || p.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.slug} · у смітнику
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              const res = await fetch(`/api/products/${p.id}`, {
+                                method: "PATCH",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ active: true }),
+                              });
+                              const data = await res.json();
+                              if (!data.ok) {
+                                toast.error(data.error ?? "Помилка");
+                                return;
+                              }
+                              toast.success("Відновлено в каталозі");
+                              setProductsView("catalog");
+                              await reload();
+                            }}
+                          >
+                            Відновити
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-[#9b1c1c] hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
+                            onClick={async () => {
+                              const label = p.nameUk || p.name;
+                              if (
+                                !confirm(
+                                  `Видалити «${label}» НАЗАВЖДИ з бази?\nУ замовленнях лишиться знімок без посилання. Архів збережеться для відновлення на бекенді.`
+                                )
+                              ) {
+                                return;
+                              }
+                              const res = await fetch(
+                                `/api/products/${p.id}?permanent=1`,
+                                { method: "DELETE" }
+                              );
+                              const data = await res.json().catch(() => ({}));
+                              if (!data.ok) {
+                                toast.error(data.error ?? "Помилка");
+                                return;
+                              }
+                              toast.success("Видалено назавжди (+ архів)");
+                              await reload();
+                            }}
+                          >
+                            <Trash2 className="size-4" />
+                            Назавжди
+                          </Button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+            <div className="border border-border bg-white p-4 sm:p-5">
               <div className="mb-4 flex items-center gap-2">
-                <Package className="size-4" />
+                <Package className="size-4 shrink-0" />
                 <h2 className="text-lg font-medium">
                   {editId ? "Редагувати товар" : "Новий товар"}
                 </h2>
               </div>
               <p className="mb-4 text-xs text-muted-foreground">
-                Усі поля опційні, крім назви, slug, опису, ціни, кольору, розміру
-                й фото. Порожні блоки просто не показуються на сайті.
+                Обовʼязкові: назва, slug, категорія, опис, ціна, колір, розмір і
+                фото. Решта — підказки в полях; порожні блоки не показуються на
+                сайті.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1 sm:col-span-2">
@@ -616,7 +758,7 @@ export default function AdminPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, name: e.target.value }))
                     }
-                    placeholder="Светр Шевченко"
+                    placeholder="напр. Светр Шевченко"
                   />
                 </div>
                 <div className="space-y-1">
@@ -626,19 +768,22 @@ export default function AdminPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, slug: e.target.value }))
                     }
-                    placeholder="shevchenko-sweater"
+                    placeholder="напр. shevchenko-sweater"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Категорія</Label>
                   <Select
-                    value={form.category}
+                    value={form.category || null}
                     onValueChange={(v) =>
-                      setForm((f) => ({ ...f, category: v as Category }))
+                      setForm((f) => ({
+                        ...f,
+                        category: (v ?? "") as Category | "",
+                      }))
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Оберіть категорію">
                         {(v) =>
                           CATEGORY_LABELS[String(v ?? "")] ?? String(v ?? "")
                         }
@@ -660,6 +805,7 @@ export default function AdminPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, description: e.target.value }))
                     }
+                    placeholder="Короткий опис товару для сторінки"
                     className="h-32 max-h-32"
                   />
                 </div>
@@ -746,6 +892,11 @@ export default function AdminPage() {
                       згенерується. Hex можна підкрутити вручну.
                     </p>
                   </div>
+                  {form.colors.length === 0 && (
+                    <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-4 text-center text-xs text-muted-foreground">
+                      Кольорів ще немає — обери з палітри нижче або додай свій
+                    </p>
+                  )}
                   <ul className="space-y-2">
                     {form.colors.map((c, i) => {
                       const preset = paletteColorForKey(c.key);
@@ -766,6 +917,7 @@ export default function AdminPage() {
                           </Label>
                           <Input
                             value={c.name}
+                            placeholder="напр. Чорний"
                             onChange={(e) => {
                               const name = e.target.value;
                               const fromName = colorKeyFromName(name);
@@ -811,7 +963,6 @@ export default function AdminPage() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          disabled={form.colors.length <= 1}
                           className="text-[#9b1c1c]"
                           onClick={() =>
                             setForm((f) => ({
@@ -909,7 +1060,7 @@ export default function AdminPage() {
                   <Input
                     value={form.sizes}
                     onChange={(e) => setForm(syncSizes(e.target.value))}
-                    placeholder="S,M,L,XL"
+                    placeholder="напр. S,M,L,XL"
                   />
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {["XS", "S", "M", "L", "XL", "XXL", "ONE"].map((s) => {
@@ -944,29 +1095,36 @@ export default function AdminPage() {
                   <p className="text-[11px] text-muted-foreground">
                     Окреме число для кожного розміру (однакове для всіх кольорів
                     при збереженні з форми). Детальніше по кольорах — вкладка
-                    «Склад».
+                    «Склад». Порожньо = 0.
                   </p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {parseSizesCsv(form.sizes).map((s) => (
-                      <div key={s} className="space-y-1">
-                        <Label className="text-[10px]">{s}</Label>
-                        <Input
-                          inputMode="numeric"
-                          value={String(form.stockBySize[s] ?? 0)}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(/[^\d]/g, "");
-                            setForm((f) => ({
-                              ...f,
-                              stockBySize: {
-                                ...f.stockBySize,
-                                [s]: raw === "" ? 0 : Number(raw),
-                              },
-                            }));
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  {parseSizesCsv(form.sizes).length === 0 ? (
+                    <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-4 text-center text-xs text-muted-foreground">
+                      Спочатку вкажи розміри вище
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {parseSizesCsv(form.sizes).map((s) => (
+                        <div key={s} className="space-y-1">
+                          <Label className="text-[10px]">{s}</Label>
+                          <Input
+                            inputMode="numeric"
+                            value={form.stockBySize[s] ?? ""}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^\d]/g, "");
+                              setForm((f) => ({
+                                ...f,
+                                stockBySize: {
+                                  ...f.stockBySize,
+                                  [s]: raw,
+                                },
+                              }));
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
@@ -998,57 +1156,65 @@ export default function AdminPage() {
                       Розмір у сітку
                     </Button>
                   </div>
-                  <div className="overflow-x-auto border border-border bg-white">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
-                          <th className="px-3 py-2">Size</th>
-                          <th className="px-3 py-2">Довжина (a)</th>
-                          <th className="px-3 py-2">Ширина (b)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {form.sizeChart.map((row, i) => (
-                          <tr
-                            key={row.size}
-                            className="border-b border-border last:border-0"
-                          >
-                            <td className="px-3 py-2 font-medium">{row.size}</td>
-                            <td className="px-3 py-1.5">
-                              <Input
-                                value={row.length}
-                                onChange={(e) => {
-                                  const sizeChart = [...form.sizeChart];
-                                  sizeChart[i] = {
-                                    ...row,
-                                    length: e.target.value,
-                                  };
-                                  setForm({ ...form, sizeChart });
-                                }}
-                                className="h-8"
-                                placeholder="66"
-                              />
-                            </td>
-                            <td className="px-3 py-1.5">
-                              <Input
-                                value={row.width}
-                                onChange={(e) => {
-                                  const sizeChart = [...form.sizeChart];
-                                  sizeChart[i] = {
-                                    ...row,
-                                    width: e.target.value,
-                                  };
-                                  setForm({ ...form, sizeChart });
-                                }}
-                                className="h-8"
-                                placeholder="64"
-                              />
-                            </td>
+                  {form.sizeChart.length === 0 ? (
+                    <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-4 text-center text-xs text-muted-foreground">
+                      Рядки зʼявляться після вибору розмірів
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto border border-border bg-white">
+                      <table className="w-full min-w-[280px] text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                            <th className="px-3 py-2">Size</th>
+                            <th className="px-3 py-2">Довжина (a)</th>
+                            <th className="px-3 py-2">Ширина (b)</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {form.sizeChart.map((row, i) => (
+                            <tr
+                              key={row.size}
+                              className="border-b border-border last:border-0"
+                            >
+                              <td className="px-3 py-2 font-medium">
+                                {row.size}
+                              </td>
+                              <td className="px-3 py-1.5">
+                                <Input
+                                  value={row.length}
+                                  onChange={(e) => {
+                                    const sizeChart = [...form.sizeChart];
+                                    sizeChart[i] = {
+                                      ...row,
+                                      length: e.target.value,
+                                    };
+                                    setForm({ ...form, sizeChart });
+                                  }}
+                                  className="h-8"
+                                  placeholder="напр. 66"
+                                />
+                              </td>
+                              <td className="px-3 py-1.5">
+                                <Input
+                                  value={row.width}
+                                  onChange={(e) => {
+                                    const sizeChart = [...form.sizeChart];
+                                    sizeChart[i] = {
+                                      ...row,
+                                      width: e.target.value,
+                                    };
+                                    setForm({ ...form, sizeChart });
+                                  }}
+                                  className="h-8"
+                                  placeholder="напр. 64"
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 <ImageGalleryField
@@ -1113,188 +1279,127 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <ul className="space-y-2">
-              {products.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex gap-3 border border-border bg-white p-3"
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-medium">У каталозі</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setProductsView("trash")}
+                  className="text-muted-foreground"
                 >
-                  <div className="relative size-16 shrink-0 overflow-hidden bg-[#eee]">
-                    {p.images[0] && (
-                      <Image
-                        key={p.images[0]}
-                        src={p.images[0]}
-                        alt=""
-                        fill
-                        unoptimized
-                        className="object-cover"
-                        sizes="64px"
-                      />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{p.nameUk || p.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatUAH(p.salePrice ?? p.price)}
-                      {p.salePrice ? " · SALE" : ""} · stock{" "}
-                      {totalStock(p.inventory)} · {p.colors.length} кол. ·{" "}
-                      {p.sizes.join("/")}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditId(p.id);
-                          setForm(productToForm(p));
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setStockProductId(p.id);
-                          setActiveTab("stock");
-                        }}
-                      >
-                        Склад
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-muted-foreground hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
-                        onClick={async () => {
-                          const label = p.nameUk || p.name;
-                          if (
-                            !confirm(
-                              `Перемістити «${label}» у смітник?\nЗникне з каталогу; з історії замовлень ще можна відкрити сторінку.`
-                            )
-                          ) {
-                            return;
-                          }
-                          const res = await fetch(`/api/products/${p.id}`, {
-                            method: "DELETE",
-                          });
-                          const data = await res.json().catch(() => ({}));
-                          if (!data.ok) {
-                            toast.error(data.error ?? "Не вдалося видалити");
-                            return;
-                          }
-                          if (editId === p.id) {
-                            setEditId(null);
-                            setForm(emptyForm());
-                          }
-                          if (stockProductId === p.id) setStockProductId(null);
-                          setProducts((list) =>
-                            list.filter((x) => x.id !== p.id)
-                          );
-                          toast.success("У смітнику");
-                          await reload();
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                  <Trash2 className="size-3.5" />
+                  Смітник
+                  {trash.length > 0 ? ` (${trash.length})` : ""}
+                </Button>
+              </div>
+              {products.length === 0 && (
+                <p className="border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
+                  Товарів ще немає
+                </p>
+              )}
+              <ul className="space-y-2">
+                {products.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex gap-3 border border-border bg-white p-3"
+                  >
+                    <div className="relative size-14 shrink-0 overflow-hidden bg-[#eee] sm:size-16">
+                      {p.images[0] && (
+                        <Image
+                          key={p.images[0]}
+                          src={p.images[0]}
+                          alt=""
+                          fill
+                          unoptimized
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      )}
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </TabsContent>
-
-          <TabsContent value="trash" className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Товари у смітнику приховані з каталогу. З історії замовлень
-              сторінку ще можна відкрити (без купівлі). «Видалити назавжди» —
-              повне стирання з БД + архів-знімок на бекенді; у замовленнях
-              лишається лише текст/фото, без посилання.
-            </p>
-            {trash.length === 0 && (
-              <p className="border border-dashed border-border bg-white p-10 text-center text-muted-foreground">
-                Смітник порожній
-              </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">
+                        {p.nameUk || p.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatUAH(p.salePrice ?? p.price)}
+                        {p.salePrice ? " · SALE" : ""} · stock{" "}
+                        {totalStock(p.inventory)} · {p.colors.length} кол. ·{" "}
+                        {p.sizes.join("/") || "—"}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditId(p.id);
+                            setForm(productToForm(p));
+                            if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setStockProductId(p.id);
+                            setActiveTab("stock");
+                          }}
+                        >
+                          Склад
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-muted-foreground hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
+                          onClick={async () => {
+                            const label = p.nameUk || p.name;
+                            if (
+                              !confirm(
+                                `Перемістити «${label}» у смітник?\nЗникне з каталогу; з історії замовлень ще можна відкрити сторінку.`
+                              )
+                            ) {
+                              return;
+                            }
+                            const res = await fetch(`/api/products/${p.id}`, {
+                              method: "DELETE",
+                            });
+                            const data = await res.json().catch(() => ({}));
+                            if (!data.ok) {
+                              toast.error(data.error ?? "Не вдалося видалити");
+                              return;
+                            }
+                            if (editId === p.id) {
+                              setEditId(null);
+                              setForm(emptyForm());
+                            }
+                            if (stockProductId === p.id) setStockProductId(null);
+                            setProducts((list) =>
+                              list.filter((x) => x.id !== p.id)
+                            );
+                            toast.success("У смітнику", {
+                              action: {
+                                label: "Відкрити",
+                                onClick: () => setProductsView("trash"),
+                              },
+                            });
+                            await reload();
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            </div>
             )}
-            <ul className="space-y-2">
-              {trash.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex gap-3 border border-border bg-white p-3"
-                >
-                  <div className="relative size-16 shrink-0 overflow-hidden bg-[#eee]">
-                    {p.images[0] && (
-                      <Image
-                        src={p.images[0]}
-                        alt=""
-                        fill
-                        unoptimized
-                        className="object-cover opacity-60"
-                        sizes="64px"
-                      />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
-                      {p.nameUk || p.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.slug} · у смітнику
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          const res = await fetch(`/api/products/${p.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ active: true }),
-                          });
-                          const data = await res.json();
-                          if (!data.ok) {
-                            toast.error(data.error ?? "Помилка");
-                            return;
-                          }
-                          toast.success("Відновлено в каталозі");
-                          await reload();
-                        }}
-                      >
-                        Відновити
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-[#9b1c1c] hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
-                        onClick={async () => {
-                          const label = p.nameUk || p.name;
-                          if (
-                            !confirm(
-                              `Видалити «${label}» НАЗАВЖДИ з бази?\nУ замовленнях лишиться знімок без посилання. Архів збережеться для відновлення на бекенді.`
-                            )
-                          ) {
-                            return;
-                          }
-                          const res = await fetch(
-                            `/api/products/${p.id}?permanent=1`,
-                            { method: "DELETE" }
-                          );
-                          const data = await res.json().catch(() => ({}));
-                          if (!data.ok) {
-                            toast.error(data.error ?? "Помилка");
-                            return;
-                          }
-                          toast.success("Видалено назавжди (+ архів)");
-                          await reload();
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                        Назавжди
-                      </Button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
           </TabsContent>
 
           <TabsContent value="stock" className="space-y-4">
@@ -1364,12 +1469,13 @@ export default function AdminPage() {
                   <div className="space-y-1">
                     <Label>Сток на кожен розмір</Label>
                     <Input
-                      type="number"
+                      inputMode="numeric"
                       value={newColor.stock}
+                      placeholder="0"
                       onChange={(e) =>
                         setNewColor({
                           ...newColor,
-                          stock: Number(e.target.value) || 0,
+                          stock: e.target.value.replace(/[^\d]/g, ""),
                         })
                       }
                     />
@@ -1382,6 +1488,10 @@ export default function AdminPage() {
                           toast.error("Потрібні key і назва кольору");
                           return;
                         }
+                        const stockQty = Math.max(
+                          0,
+                          Number(newColor.stock) || 0
+                        );
                         const res = await fetch(
                           `/api/products/${stockProduct.id}`,
                           {
@@ -1389,7 +1499,10 @@ export default function AdminPage() {
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                               addColor: {
-                                ...newColor,
+                                key: newColor.key,
+                                name: newColor.name,
+                                hex: newColor.hex,
+                                stock: stockQty,
                                 nameUk: newColor.name,
                               },
                             }),
@@ -1405,7 +1518,7 @@ export default function AdminPage() {
                           key: "",
                           name: "",
                           hex: "#E8E4DC",
-                          stock: 0,
+                          stock: "",
                         });
                         await reload();
                       }}

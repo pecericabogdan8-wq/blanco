@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+items
+eng.traineddata
+ukr.traineddata
+*.log
+.env
+.env.local
+.vercel
+AgentStores
+.cursor
+BlancoPortfolio.pdf

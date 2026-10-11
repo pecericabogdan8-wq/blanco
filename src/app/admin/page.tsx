@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ChevronDown, Package, Plus, Trash2 } from "lucide-react";
 import { ImageGalleryField } from "@/components/admin/image-gallery-field";
@@ -311,6 +316,35 @@ export default function AdminPage() {
     else setLoading(false);
   }, [user, reload]);
 
+  const fillNextSku = useCallback(async (category?: Category | "") => {
+    const cat = (category || "sweaters") as Category;
+    try {
+      const res = await fetch(
+        `/api/products?nextSku=1&category=${encodeURIComponent(cat)}`
+      );
+      const data = await res.json();
+      if (data.ok && data.sku) {
+        setForm((f) => ({ ...f, sku: String(data.sku) }));
+      }
+    } catch {
+      /* ignore preview errors */
+    }
+  }, []);
+
+  const resetCreateForm = useCallback(() => {
+    setEditId(null);
+    setSkuEdited(false);
+    setForm(emptyForm());
+    void fillNextSku("sweaters");
+  }, [fillNextSku]);
+
+  useEffect(() => {
+    if (user?.role !== "ADMIN") return;
+    if (editId) return;
+    if (form.sku.trim()) return;
+    void fillNextSku(form.category || "sweaters");
+  }, [user?.role, editId, form.sku, form.category, fillNextSku]);
+
   if (!user) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
@@ -538,37 +572,6 @@ export default function AdminPage() {
       };
     });
   }
-
-  async function fillNextSku(category?: Category | "") {
-    const cat = (category || "sweaters") as Category;
-    try {
-      const res = await fetch(
-        `/api/products?nextSku=1&category=${encodeURIComponent(cat)}`
-      );
-      const data = await res.json();
-      if (data.ok && data.sku) {
-        setForm((f) => ({ ...f, sku: String(data.sku) }));
-      }
-    } catch {
-      /* ignore preview errors */
-    }
-  }
-
-  function resetCreateForm() {
-    setEditId(null);
-    setSkuEdited(false);
-    setForm(emptyForm());
-    void fillNextSku("sweaters");
-  }
-
-  useEffect(() => {
-    if (user?.role !== "ADMIN") return;
-    if (editId) return;
-    if (form.sku.trim()) return;
-    void fillNextSku(form.category || "sweaters");
-    // only bootstrap empty create form
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.role]);
 
   return (
     <div className="min-h-screen bg-[#f3f2ef]">

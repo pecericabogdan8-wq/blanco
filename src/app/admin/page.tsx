@@ -194,7 +194,7 @@ const emptyForm = () => ({
   name: "",
   slug: "",
   sku: "",
-  category: "" as Category | "",
+  category: "sweaters" as Category | "",
   description: "",
   details: "",
   price: "",
@@ -466,9 +466,7 @@ export default function AdminPage() {
       return;
     }
     toast.success(editId ? "Збережено в базі" : "Товар додано в базу");
-    setEditId(null);
-    setSkuEdited(false);
-    setForm(emptyForm());
+    resetCreateForm();
     await reload();
   }
 
@@ -541,10 +539,11 @@ export default function AdminPage() {
     });
   }
 
-  async function fillNextSku(category: Category) {
+  async function fillNextSku(category?: Category | "") {
+    const cat = (category || "sweaters") as Category;
     try {
       const res = await fetch(
-        `/api/products?nextSku=1&category=${encodeURIComponent(category)}`
+        `/api/products?nextSku=1&category=${encodeURIComponent(cat)}`
       );
       const data = await res.json();
       if (data.ok && data.sku) {
@@ -554,6 +553,22 @@ export default function AdminPage() {
       /* ignore preview errors */
     }
   }
+
+  function resetCreateForm() {
+    setEditId(null);
+    setSkuEdited(false);
+    setForm(emptyForm());
+    void fillNextSku("sweaters");
+  }
+
+  useEffect(() => {
+    if (user?.role !== "ADMIN") return;
+    if (editId) return;
+    if (form.sku.trim()) return;
+    void fillNextSku(form.category || "sweaters");
+    // only bootstrap empty create form
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
 
   return (
     <div className="min-h-screen bg-[#f3f2ef]">
@@ -1099,15 +1114,12 @@ export default function AdminPage() {
                         sku: e.target.value.toUpperCase(),
                       }));
                     }}
-                    placeholder="BL-SW-001"
+                    placeholder="генеруємо…"
                     className="font-mono tracking-wide uppercase"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Єдине поле для редагування. При створенні підставляється
-                    автоматично (унікальний). Варіанти:{" "}
-                    <span className="font-mono text-foreground/80">
-                      {form.sku.trim() || "BL-SW-001"}-BLUE-L
-                    </span>
+                    Генерується сам, можна змінити. Для кольору/розміру код
+                    варіанту додається автоматично.
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -1441,11 +1453,7 @@ export default function AdminPage() {
                 <div className="space-y-2">
                   <Label>Склад — колір × розмір</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Кожна клітинка = окремий залишок. Код варіанту (підказка):{" "}
-                    <span className="font-mono text-foreground/80">
-                      {(form.sku.trim() || "BL-SW-001") + "-COLOR-SIZE"}
-                    </span>
-                    . Порожньо = 0.
+                    Кожна клітинка = залишок на колір×розмір. Порожньо = 0.
                   </p>
                   {form.colors.length === 0 ||
                   parseSizesCsv(form.sizes).length === 0 ? (
@@ -1722,11 +1730,7 @@ export default function AdminPage() {
                 {editId && (
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setEditId(null);
-                      setSkuEdited(false);
-                      setForm(emptyForm());
-                    }}
+                    onClick={() => resetCreateForm()}
                   >
                     Скасувати
                   </Button>
@@ -1901,8 +1905,7 @@ export default function AdminPage() {
                                 return;
                               }
                               if (editId === p.id) {
-                                setEditId(null);
-                                setForm(emptyForm());
+                                resetCreateForm();
                               }
                               setProducts((list) =>
                                 list.filter((x) => x.id !== p.id)

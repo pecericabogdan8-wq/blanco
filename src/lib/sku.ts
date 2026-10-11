@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { prisma } from "@/lib/db";
 
 const CAT_CODE: Record<string, string> = {
@@ -6,7 +7,7 @@ const CAT_CODE: Record<string, string> = {
   scarves: "SC",
 };
 
-/** Normalize a SKU segment: BL-SW-001, BLUE, L → safe uppercase token. */
+/** Normalize a SKU segment: BL-SW-482917, BLUE, L → safe uppercase token. */
 export function normalizeSkuPart(value: string): string {
   return value
     .trim()
@@ -17,7 +18,7 @@ export function normalizeSkuPart(value: string): string {
 
 /**
  * Fashion convention (style + colour + size):
- * product article BL-SW-001 + blue + L → BL-SW-001-BLUE-L
+ * product article BL-SW-482917 + blue + L → BL-SW-482917-BLUE-L
  * Unique per sellable unit; product.sku stays unique at style level.
  */
 export function buildVariantSku(
@@ -36,33 +37,40 @@ export function categorySkuPrefix(category: string): string {
   return `BL-${code}-`;
 }
 
-/** Next free style article for a category (does not write). */
-export async function peekNextProductSku(category: string): Promise<string> {
+/**
+ * Random unique style article: BL-{CAT}-{6 digits}.
+ * Not sequential — delete/create never “fills gaps” or reuses a pattern.
+ * Clash check covers all products (incl. trash), so soft-deleted SKUs stay reserved.
+ */
+export async function peekNextProductSku(
+  category: string,
+  excludeProductId?: string
+): Promise<string> {
   const prefix = categorySkuPrefix(category);
-  const existing = await prisma.product.findMany({
-    where: { sku: { startsWith: prefix } },
-    select: { sku: true },
-  });
-  let max = 0;
-  for (const row of existing) {
-    const n = Number(row.sku?.slice(prefix.length));
-    if (Number.isFinite(n) && n > max) max = n;
+  for (let attempt = 0; attempt < 48; attempt++) {
+    const candidate = `${prefix}${randomInt(100000, 1000000)}`;
+    const clash = await prisma.product.findFirst({
+      where: {
+        sku: candidate,
+        ...(excludeProductId ? { NOT: { id: excludeProductId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!clash) return candidate;
   }
-  return `${prefix}${String(max + 1).padStart(3, "0")}`;
+  throw new Error("Не вдалося згенерувати унікальний артикул — спробуйте ще раз");
 }
 
 /**
  * Style-level article: unique Product.sku.
- * Prefer manual value when provided; otherwise allocate BL-{CAT}-NNN.
+ * Prefer manual value when provided; otherwise random BL-{CAT}-NNNNNN.
  */
 export async function allocateProductSku(
   category: string,
   preferred?: string | null,
   excludeProductId?: string
 ): Promise<string> {
-  const manual = preferred?.trim()
-    ? normalizeSkuPart(preferred)
-    : "";
+  const manual = preferred?.trim() ? normalizeSkuPart(preferred) : "";
   if (manual) {
     const clash = await prisma.product.findFirst({
       where: {
@@ -74,7 +82,7 @@ export async function allocateProductSku(
     if (clash) throw new Error(`Артикул «${manual}» уже зайнятий`);
     return manual;
   }
-  return peekNextProductSku(category);
+  return peekNextProductSku(category, excludeProductId);
 }
 
 /** Keep ProductVariant.sku in sync with style article + colour + size. */

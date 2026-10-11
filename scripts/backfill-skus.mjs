@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { PrismaClient } from "@prisma/client";
 
 const CAT_CODE = {
@@ -26,16 +27,15 @@ function buildVariantSku(productSku, colorKey, size) {
 async function allocate(category) {
   const code = CAT_CODE[category] ?? "XX";
   const prefix = `BL-${code}-`;
-  const existing = await prisma.product.findMany({
-    where: { sku: { startsWith: prefix } },
-    select: { sku: true },
-  });
-  let max = 0;
-  for (const row of existing) {
-    const n = Number(row.sku?.slice(prefix.length));
-    if (Number.isFinite(n) && n > max) max = n;
+  for (let i = 0; i < 48; i++) {
+    const candidate = `${prefix}${randomInt(100000, 1000000)}`;
+    const clash = await prisma.product.findFirst({
+      where: { sku: candidate },
+      select: { id: true },
+    });
+    if (!clash) return candidate;
   }
-  return `${prefix}${String(max + 1).padStart(3, "0")}`;
+  throw new Error("Could not allocate unique SKU");
 }
 
 const missing = await prisma.product.findMany({

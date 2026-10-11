@@ -178,7 +178,7 @@ model ProductColor {
   @@unique([productId, key])
 }
 
-/// SKU stock row (admin inventory)
+/// SKU stock row (admin inventory) — sku = style-color-size, unique globally
 model ProductVariant {
   id        String       @id @default(cuid())
   productId String
@@ -187,7 +187,8 @@ model ProductVariant {
   color     ProductColor @relation(fields: [colorId], references: [id], onDelete: Cascade)
   size      String
   stock     Int          @default(0)
-  sku       String?
+  /// e.g. BL-SW-001-BLUE-L
+  sku       String?      @unique
 
   @@unique([productId, colorId, size])
   @@index([productId])
@@ -252,6 +253,8 @@ model OrderItem {
   qty       Int
   price     Int
   image     String
+  /// Snapshot of variant SKU (style-color-size) at purchase
+  sku       String?
 
   @@index([orderId])
 }

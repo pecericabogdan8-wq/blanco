@@ -44,6 +44,7 @@ export async function POST(req: Request) {
         qty: number;
         price: number;
         image: string;
+        sku?: string;
         variantId: string;
       }[] = [];
 
@@ -81,6 +82,7 @@ export async function POST(req: Request) {
           qty: line.qty,
           price,
           image: product.images[0]?.url ?? "",
+          sku: variant.sku ?? undefined,
           variantId: variant.id,
         });
       }
@@ -118,6 +120,7 @@ export async function POST(req: Request) {
               qty: i.qty,
               price: i.price,
               image: i.image,
+              sku: i.sku ?? null,
             })),
           },
         },

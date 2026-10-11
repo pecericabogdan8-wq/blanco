@@ -8,6 +8,21 @@ const CAT_CODE = {
 
 const prisma = new PrismaClient();
 
+function normalizeSkuPart(value) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildVariantSku(productSku, colorKey, size) {
+  return [productSku, colorKey, size]
+    .map(normalizeSkuPart)
+    .filter(Boolean)
+    .join("-");
+}
+
 async function allocate(category) {
   const code = CAT_CODE[category] ?? "XX";
   const prefix = `BL-${code}-`;
@@ -32,8 +47,28 @@ const missing = await prisma.product.findMany({
 for (const p of missing) {
   const sku = await allocate(p.category);
   await prisma.product.update({ where: { id: p.id }, data: { sku } });
-  console.log(`${p.slug} → ${sku}`);
+  console.log(`style ${p.slug} → ${sku}`);
 }
 
-console.log(`Done: ${missing.length} products`);
+const products = await prisma.product.findMany({
+  include: { colors: true, variants: true },
+});
+
+for (const product of products) {
+  const base = product.sku || normalizeSkuPart(product.slug);
+  const colorById = new Map(product.colors.map((c) => [c.id, c.key]));
+  for (const v of product.variants) {
+    const colorKey = colorById.get(v.colorId);
+    if (!colorKey) continue;
+    const next = buildVariantSku(base, colorKey, v.size);
+    if (v.sku === next) continue;
+    await prisma.productVariant.update({
+      where: { id: v.id },
+      data: { sku: next },
+    });
+    console.log(`variant ${v.id} → ${next}`);
+  }
+}
+
+console.log("Done");
 await prisma.$disconnect();

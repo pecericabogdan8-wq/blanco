@@ -117,6 +117,11 @@ export default function OrderDetailPage({
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {item.colorName} · {item.size} · ×{item.qty}
+                  {item.sku ? (
+                    <span className="mt-0.5 block font-mono text-[11px] tracking-wide">
+                      {item.sku}
+                    </span>
+                  ) : null}
                 </p>
                 {item.productStatus === "trash" && (
                   <p className="mt-0.5 text-[11px] text-muted-foreground">

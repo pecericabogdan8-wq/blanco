@@ -7,6 +7,7 @@ type OrderItemRow = {
   price: number;
   colorName: string;
   image: string;
+  sku?: string | null;
   product?: { id: string; slug: string; active: boolean } | null;
 };
 
@@ -48,6 +49,7 @@ export function mapOrderItem(i: OrderItemRow) {
     price: i.price,
     colorName: i.colorName,
     image: i.image,
+    sku: i.sku ?? undefined,
     productSlug: product?.slug ?? null,
     productStatus,
   };

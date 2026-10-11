@@ -4,6 +4,11 @@ import { cleanImageList } from "@/lib/product-images";
 import { requireAdmin } from "@/lib/auth";
 import { archiveProductBeforeDelete } from "@/lib/product-archive";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api";
+import {
+  allocateProductSku,
+  buildVariantSku,
+  syncProductVariantSkus,
+} from "@/lib/sku";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -40,18 +45,28 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (body.nameUk != null) data.nameUk = String(body.nameUk);
     if (body.slug != null) data.slug = String(body.slug);
     if (body.sku !== undefined) {
-      const nextSku = String(body.sku ?? "")
-        .trim()
-        .toUpperCase();
-      if (!nextSku) {
-        data.sku = null;
+      const raw = String(body.sku ?? "").trim();
+      if (!raw) {
+        // Keep or allocate — never leave blank after edit
+        try {
+          data.sku = await allocateProductSku(
+            String(body.category ?? existing.category),
+            null,
+            existing.id
+          );
+        } catch (e) {
+          return jsonError(e instanceof Error ? e.message : "SKU error", 409);
+        }
       } else {
-        const clash = await prisma.product.findFirst({
-          where: { sku: nextSku, NOT: { id: existing.id } },
-          select: { id: true },
-        });
-        if (clash) return jsonError(`Артикул «${nextSku}» уже зайнятий`, 409);
-        data.sku = nextSku;
+        try {
+          data.sku = await allocateProductSku(
+            String(body.category ?? existing.category),
+            raw,
+            existing.id
+          );
+        } catch (e) {
+          return jsonError(e instanceof Error ? e.message : "SKU error", 409);
+        }
       }
     }
     if (body.category != null) data.category = String(body.category);
@@ -151,7 +166,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
                 colorId: color.id,
                 size,
                 stock: 0,
-                sku: `${product.slug}-${key}-${size}`.toUpperCase(),
+                sku: buildVariantSku(product.sku || product.slug, key, size),
               },
             });
           }
@@ -248,7 +263,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
             colorId: color.id,
             size,
             stock,
-            sku: `${product.slug}-${key}-${size}`.toUpperCase(),
+            sku: buildVariantSku(product.sku || product.slug, key, size),
           },
         });
       }
@@ -273,7 +288,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
             colorId: color.id,
             size,
             stock,
-            sku: `${product.slug}-${color.key}-${size}`.toUpperCase(),
+            sku: buildVariantSku(product.sku || product.slug, color.key, size),
           },
         });
       }
@@ -306,7 +321,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
             colorId: color.id,
             size,
             stock: Math.max(0, Number(qty) || 0),
-            sku: `${product.slug}-${colorKey}-${size}`.toUpperCase(),
+            sku: buildVariantSku(product.sku || product.slug, colorKey, size),
           },
           update: { stock: Math.max(0, Number(qty) || 0) },
         });
@@ -335,12 +350,14 @@ export async function PATCH(req: Request, ctx: Ctx) {
               colorId: color.id,
               size,
               stock: 0,
-              sku: `${product.slug}-${color.key}-${size}`.toUpperCase(),
+              sku: buildVariantSku(product.sku || product.slug, color.key, size),
             },
           });
         }
       }
     }
+
+    await syncProductVariantSkus(existing.id);
 
     const full = await prisma.product.findUniqueOrThrow({
       where: { id: existing.id },

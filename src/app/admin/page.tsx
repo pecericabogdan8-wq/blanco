@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ChevronDown, Package, Plus, Trash2 } from "lucide-react";
 import { ImageGalleryField } from "@/components/admin/image-gallery-field";
+import { WriteoffDialog } from "@/components/admin/writeoff-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   COLOR_PALETTE,
   colorKeyFromName,
@@ -260,16 +260,8 @@ export default function AdminPage() {
   const [returns, setReturns] = useState<ReturnRow[]>([]);
   const [bestsellerIds, setBestsellerIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [writeoffProductId, setWriteoffProductId] = useState<string | null>(
-    null
-  );
-  const [writeoffQuery, setWriteoffQuery] = useState("");
-  const [writeoff, setWriteoff] = useState({
-    colorKey: "",
-    size: "",
-    qty: "1",
-    note: "",
-  });
+  const [writeoffOpen, setWriteoffOpen] = useState(false);
+  const [skuEdited, setSkuEdited] = useState(false);
   const [returnAdminNotes, setReturnAdminNotes] = useState<
     Record<string, string>
   >({});
@@ -318,25 +310,6 @@ export default function AdminPage() {
     if (user?.role === "ADMIN") void reload();
     else setLoading(false);
   }, [user, reload]);
-
-  const writeoffProduct = useMemo(
-    () => products.find((p) => p.id === writeoffProductId) ?? null,
-    [products, writeoffProductId]
-  );
-
-  const writeoffProductChoices = useMemo(() => {
-    const q = writeoffQuery.trim().toLowerCase();
-    return products.filter((p) => {
-      if (!q) return true;
-      const name = (p.nameUk || p.name).toLowerCase();
-      const sku = (p.sku ?? "").toLowerCase();
-      return (
-        name.includes(q) ||
-        p.slug.toLowerCase().includes(q) ||
-        sku.includes(q)
-      );
-    });
-  }, [products, writeoffQuery]);
 
   if (!user) {
     return (
@@ -464,7 +437,7 @@ export default function AdminPage() {
       name: form.name.trim(),
       nameUk: form.name.trim(),
       slug: form.slug.trim(),
-      ...(skuTrim ? { sku: skuTrim } : {}),
+      sku: skuTrim,
       category: form.category,
       description: form.description.trim(),
       descriptionUk: form.description.trim(),
@@ -494,6 +467,7 @@ export default function AdminPage() {
     }
     toast.success(editId ? "Збережено в базі" : "Товар додано в базу");
     setEditId(null);
+    setSkuEdited(false);
     setForm(emptyForm());
     await reload();
   }
@@ -567,48 +541,18 @@ export default function AdminPage() {
     });
   }
 
-  async function submitWriteoff() {
-    if (!writeoffProduct) {
-      toast.error("Оберіть товар");
-      return;
+  async function fillNextSku(category: Category) {
+    try {
+      const res = await fetch(
+        `/api/products?nextSku=1&category=${encodeURIComponent(category)}`
+      );
+      const data = await res.json();
+      if (data.ok && data.sku) {
+        setForm((f) => ({ ...f, sku: String(data.sku) }));
+      }
+    } catch {
+      /* ignore preview errors */
     }
-    const colorKey =
-      writeoff.colorKey || writeoffProduct.colors[0]?.id || "";
-    const size =
-      writeoff.size || writeoffProduct.sizes[0] || "";
-    const qty = Math.max(1, Number(writeoff.qty) || 1);
-    if (!colorKey || !size) {
-      toast.error("Оберіть колір і розмір");
-      return;
-    }
-    const key = invKey(colorKey, size);
-    const have = Math.max(0, writeoffProduct.inventory[key] ?? 0);
-    if (have < qty) {
-      toast.error(`У наявності лише ${have} шт. (${colorKey}/${size})`);
-      return;
-    }
-    const nextInventory = {
-      ...writeoffProduct.inventory,
-      [key]: have - qty,
-    };
-    const res = await fetch(`/api/products/${writeoffProduct.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ inventory: nextInventory }),
-    });
-    const data = await res.json();
-    if (!data.ok) {
-      toast.error(data.error ?? "Помилка");
-      return;
-    }
-    const note = writeoff.note.trim();
-    toast.success(
-      note
-        ? `Списано ${qty} · ${colorKey}/${size} (${note})`
-        : `Списано ${qty} · ${colorKey}/${size}`
-    );
-    setWriteoff((w) => ({ ...w, qty: "1", note: "" }));
-    await reload();
   }
 
   return (
@@ -657,31 +601,35 @@ export default function AdminPage() {
           ))}
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+        <div className="mb-6 flex flex-wrap gap-1">
             {(
               [
                 ["products", `Товари (${products.length})`],
                 ["orders", `Замовлення (${orders.length})`],
-                ["writeoff", "Списання"],
                 ["returns", `Повернення (${returns.length})`],
                 ["tickets", `Тікети (${tickets.length})`],
               ] as const
             ).map(([v, label]) => (
-              <TabsTrigger
+              <button
                 key={v}
-                value={v}
-                className="rounded-none border border-border bg-white px-3 py-2 text-sm data-active:bg-ink data-active:text-mist sm:px-4"
+                type="button"
+                className={cn(
+                  "rounded-none border border-border bg-white px-3 py-2 text-sm sm:px-4",
+                  activeTab === v && "bg-ink text-mist"
+                )}
                 onClick={() => {
+                  setActiveTab(v);
                   if (v === "products") setProductsView("catalog");
                 }}
               >
                 {label}
-              </TabsTrigger>
+              </button>
             ))}
-          </TabsList>
+          </div>
 
-          <TabsContent value="orders" className="space-y-3">
+
+          {activeTab === "orders" && (
+          <div className="space-y-3">
             {orders.length === 0 && (
               <p className="border border-dashed border-border bg-white p-10 text-center text-muted-foreground">
                 Замовлень ще немає — оформіть тестове з сайту
@@ -747,7 +695,13 @@ export default function AdminPage() {
                             key={`${i.productId}-${i.size}-${i.colorId}`}
                             className="text-muted-foreground"
                           >
-                            {i.name} · {i.colorName} · {i.size} ×{i.qty} —{" "}
+                            {i.name} · {i.colorName} · {i.size}
+                              {i.sku ? (
+                                <span className="ml-1 font-mono text-[10px] text-muted-foreground">
+                                  {i.sku}
+                                </span>
+                              ) : null}{" "}
+                              ×{i.qty} —{" "}
                             {formatUAH(i.price * i.qty)}
                           </li>
                         ))}
@@ -858,219 +812,11 @@ export default function AdminPage() {
                 </div>
               );
             })}
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="writeoff" className="space-y-4">
-            <div className="border border-border bg-white p-4 sm:p-6">
-              <p className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
-                Склад
-              </p>
-              <h2 className="text-xl font-medium tracking-tight">
-                Списання зі складу
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Бартер, офлайн-продаж або порча — мінусуємо залишок без
-                замовлення на сайті. Оберіть товар, колір, розмір і кількість.
-              </p>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-              <div className="space-y-3 border border-border bg-white p-4 sm:p-5">
-                <Label htmlFor="writeoff-search">Товар</Label>
-                <Input
-                  id="writeoff-search"
-                  value={writeoffQuery}
-                  onChange={(e) => setWriteoffQuery(e.target.value)}
-                  placeholder="Пошук за назвою або slug…"
-                  className="bg-white"
-                />
-                <ul className="max-h-[420px] space-y-1 overflow-y-auto border border-border">
-                  {writeoffProductChoices.length === 0 && (
-                    <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-                      Нічого не знайдено
-                    </li>
-                  )}
-                  {writeoffProductChoices.map((p) => {
-                    const stock = totalStock(p.inventory);
-                    const selected = writeoffProductId === p.id;
-                    return (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWriteoffProductId(p.id);
-                            const c0 = p.colors[0]?.id ?? "";
-                            const s0 = p.sizes[0] ?? "";
-                            setWriteoff({
-                              colorKey: c0,
-                              size: s0,
-                              qty: "1",
-                              note: "",
-                            });
-                          }}
-                          className={cn(
-                            "flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-[#faf9f7]",
-                            selected && "bg-ink/5 ring-1 ring-inset ring-ink/20"
-                          )}
-                        >
-                          <div className="relative size-12 shrink-0 overflow-hidden bg-[#eee]">
-                            {p.images[0] && (
-                              <Image
-                                src={p.images[0]}
-                                alt=""
-                                fill
-                                unoptimized
-                                className="object-cover"
-                                sizes="48px"
-                              />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">
-                              {p.nameUk || p.name}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {p.sku || p.slug}
-                            </p>
-                          </div>
-                          <p className="shrink-0 text-sm font-medium tabular-nums">
-                            {stock}
-                          </p>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-
-              <div className="space-y-4 border border-border bg-white p-4 sm:p-5">
-                {!writeoffProduct ? (
-                  <p className="border border-dashed border-border bg-[#faf9f7] px-4 py-10 text-center text-sm text-muted-foreground">
-                    Оберіть товар зі списку — покажемо залишки по кольорах і
-                    розмірах
-                  </p>
-                ) : (
-                  <>
-                    <div>
-                      <p className="font-medium">
-                        {writeoffProduct.nameUk || writeoffProduct.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {writeoffProduct.sku || writeoffProduct.slug} ·{" "}
-                        {totalStock(writeoffProduct.inventory)} од. на складі
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Колір</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {writeoffProduct.colors.map((c) => {
-                          const active = writeoff.colorKey === c.id;
-                          return (
-                            <button
-                              key={c.id}
-                              type="button"
-                              title={c.nameUk || c.name}
-                              onClick={() =>
-                                setWriteoff((w) => ({
-                                  ...w,
-                                  colorKey: c.id,
-                                  size:
-                                    w.size && writeoffProduct.sizes.length
-                                      ? w.size
-                                      : writeoffProduct.sizes[0] ?? "",
-                                }))
-                              }
-                              className={cn(
-                                "inline-flex items-center gap-2 border px-2.5 py-1.5 text-xs",
-                                active
-                                  ? "border-ink bg-ink text-mist"
-                                  : "border-border bg-white"
-                              )}
-                            >
-                              <span
-                                className="size-3 rounded-full border border-black/20"
-                                style={{ backgroundColor: c.hex }}
-                              />
-                              {c.nameUk || c.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {writeoff.colorKey && (
-                      <div className="space-y-2">
-                        <Label>Розмір і залишок</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {writeoffProduct.sizes.map((s) => {
-                            const key = invKey(writeoff.colorKey, s);
-                            const qtyCell = writeoffProduct.inventory[key] ?? 0;
-                            const active = writeoff.size === s;
-                            return (
-                              <button
-                                key={s}
-                                type="button"
-                                disabled={qtyCell <= 0}
-                                onClick={() =>
-                                  setWriteoff((w) => ({ ...w, size: s }))
-                                }
-                                className={cn(
-                                  "border px-3 py-2 text-xs tabular-nums",
-                                  qtyCell <= 0 && "opacity-40",
-                                  active
-                                    ? "border-ink bg-ink text-mist"
-                                    : "border-border bg-white"
-                                )}
-                              >
-                                {s} · {qtyCell}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
-                      <div className="space-y-1">
-                        <Label htmlFor="writeoff-qty">К-сть</Label>
-                        <Input
-                          id="writeoff-qty"
-                          inputMode="numeric"
-                          className="w-20 bg-white tabular-nums"
-                          value={writeoff.qty}
-                          onChange={(e) =>
-                            setWriteoff((w) => ({
-                              ...w,
-                              qty: e.target.value.replace(/[^\d]/g, ""),
-                            }))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-1 sm:col-span-1">
-                        <Label htmlFor="writeoff-note">Коментар (необовʼязково)</Label>
-                        <Textarea
-                          id="writeoff-note"
-                          value={writeoff.note}
-                          onChange={(e) =>
-                            setWriteoff((w) => ({ ...w, note: e.target.value }))
-                          }
-                          placeholder="бартер, офлайн, брак…"
-                          className="min-h-[4rem] bg-white"
-                        />
-                      </div>
-                    </div>
-
-                    <Button type="button" onClick={() => void submitWriteoff()}>
-                      Списати
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="returns" className="space-y-4">
+          {activeTab === "returns" && (
+          <div className="space-y-4">
             <p className="border border-border bg-[#faf9f7] px-4 py-3 text-sm text-muted-foreground">
               Заявки з сайту. «Отримано OK» / «Повернути кошти» / «Обмін» повертають
               одиниці на склад один раз (якщо ще не повернуто через скасування
@@ -1190,9 +936,11 @@ export default function AdminPage() {
                 );
               })}
             </ul>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="products" className="space-y-4">
+          {activeTab === "products" && (
+          <div className="space-y-4">
             {productsView === "trash" ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1341,28 +1089,38 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>SKU</Label>
+                  <Label>Артикул</Label>
                   <Input
                     value={form.sku}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, sku: e.target.value }))
-                    }
-                    placeholder="авто або BL-SW-001"
+                    onChange={(e) => {
+                      setSkuEdited(true);
+                      setForm((f) => ({
+                        ...f,
+                        sku: e.target.value.toUpperCase(),
+                      }));
+                    }}
+                    placeholder="BL-SW-001"
+                    className="font-mono tracking-wide uppercase"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Порожньо при створенні — згенерує API.
+                    Єдине поле для редагування. При створенні підставляється
+                    автоматично (унікальний). Варіанти:{" "}
+                    <span className="font-mono text-foreground/80">
+                      {form.sku.trim() || "BL-SW-001"}-BLUE-L
+                    </span>
                   </p>
                 </div>
                 <div className="space-y-1">
                   <Label>Категорія</Label>
                   <Select
                     value={form.category || null}
-                    onValueChange={(v) =>
-                      setForm((f) => ({
-                        ...f,
-                        category: (v ?? "") as Category | "",
-                      }))
-                    }
+                    onValueChange={(v) => {
+                      const cat = (v ?? "") as Category | "";
+                      setForm((f) => ({ ...f, category: cat }));
+                      if (!editId && !skuEdited && cat) {
+                        void fillNextSku(cat);
+                      }
+                    }}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Оберіть категорію">
@@ -1683,8 +1441,11 @@ export default function AdminPage() {
                 <div className="space-y-2">
                   <Label>Склад — колір × розмір</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Кожна клітинка = окремий залишок (напр. білий S = 3, синій M
-                    = 4). Порожньо = 0. Суми рахуються автоматично.
+                    Кожна клітинка = окремий залишок. Код варіанту (підказка):{" "}
+                    <span className="font-mono text-foreground/80">
+                      {(form.sku.trim() || "BL-SW-001") + "-COLOR-SIZE"}
+                    </span>
+                    . Порожньо = 0.
                   </p>
                   {form.colors.length === 0 ||
                   parseSizesCsv(form.sizes).length === 0 ? (
@@ -1963,6 +1724,7 @@ export default function AdminPage() {
                     variant="outline"
                     onClick={() => {
                       setEditId(null);
+                      setSkuEdited(false);
                       setForm(emptyForm());
                     }}
                   >
@@ -1975,6 +1737,16 @@ export default function AdminPage() {
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-medium">У каталозі</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWriteoffOpen(true)}
+                >
+                  <Package className="size-3.5" />
+                  Списання
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -1990,6 +1762,7 @@ export default function AdminPage() {
                     </span>
                   )}
                 </Button>
+                </div>
               </div>
               {products.length === 0 && (
                 <p className="border border-dashed border-border bg-white p-8 text-center text-sm text-muted-foreground">
@@ -2093,6 +1866,7 @@ export default function AdminPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
+                              setSkuEdited(true);
                               setEditId(p.id);
                               setForm(productToForm(p));
                               if (
@@ -2161,9 +1935,11 @@ export default function AdminPage() {
             </div>
             </div>
             )}
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="tickets" className="space-y-3">
+          {activeTab === "tickets" && (
+          <div className="space-y-3">
             {tickets.length === 0 && (
               <p className="border border-dashed border-border bg-white p-10 text-center text-muted-foreground">
                 Тікетів немає
@@ -2181,8 +1957,14 @@ export default function AdminPage() {
                 </p>
               </div>
             ))}
-          </TabsContent>
-        </Tabs>
+          </div>
+          )}
+      <WriteoffDialog
+        open={writeoffOpen}
+        onOpenChange={setWriteoffOpen}
+        products={products}
+        onDone={reload}
+      />
       </div>
     </div>
   );

@@ -4,7 +4,12 @@ import { cleanImageList } from "@/lib/product-images";
 import { productMatchesQuery } from "@/lib/localize-product";
 import { requireAdmin } from "@/lib/auth";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api";
-import { allocateProductSku } from "@/lib/sku";
+import {
+  allocateProductSku,
+  buildVariantSku,
+  peekNextProductSku,
+  syncProductVariantSkus,
+} from "@/lib/sku";
 
 export async function GET(req: Request) {
   try {
@@ -15,7 +20,14 @@ export async function GET(req: Request) {
     const onSale = searchParams.get("onSale") === "1";
     const includeInactive = searchParams.get("all") === "1";
     const trashOnly = searchParams.get("trash") === "1";
-    if (includeInactive || trashOnly) await requireAdmin();
+    const nextSku = searchParams.get("nextSku") === "1";
+    if (includeInactive || trashOnly || nextSku) await requireAdmin();
+
+    if (nextSku) {
+      const cat = category || "sweaters";
+      const sku = await peekNextProductSku(cat);
+      return jsonOk({ ok: true, sku });
+    }
 
     const products = await prisma.product.findMany({
       where: {
@@ -196,11 +208,13 @@ export async function POST(req: Request) {
             colorId: color.id,
             size,
             stock: Math.max(0, Number(qty) || 0),
-            sku: `${slug}-${color.key}-${size}`.toUpperCase(),
+            sku: buildVariantSku(skuValue, color.key, size),
           },
         });
       }
     }
+
+    await syncProductVariantSkus(product.id);
 
     const full = await prisma.product.findUniqueOrThrow({
       where: { id: product.id },

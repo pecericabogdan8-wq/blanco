@@ -72,6 +72,8 @@ export type OrderItem = CartItem & {
   price: number;
   colorName: string;
   image: string;
+  /** Variant article snapshot: BL-SW-001-BLUE-L */
+  sku?: string;
   /** Present while product row still exists (active or trash) — used for PDP link */
   productSlug?: string | null;
   /** active | trash | gone — gone = hard-deleted, no link */

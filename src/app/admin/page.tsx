@@ -970,7 +970,7 @@ export default function AdminPage() {
                     onClick={() => setProductsView("catalog")}
                   >
                     <ArrowLeft className="size-3.5" />
-                    До каталогу
+                    До товарів
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">

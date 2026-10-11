@@ -1,4 +1,4 @@
-import { DM_Sans, Great_Vibes, Playfair_Display } from "next/font/google";
+import { DM_Sans, Great_Vibes } from "next/font/google";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -8,21 +8,12 @@ const dmSans = DM_Sans({
 });
 
 /**
- * Page titles — high-contrast Didone (same family vibe as Blanco wordmark),
- * with Cyrillic. Italic matches the slanted logo look, but stays readable.
+ * Brand + page titles — Great Vibes (portfolio logo script).
+ * Cyrillic glyphs added in the 2024 Google Fonts release.
  */
-const playfair = Playfair_Display({
-  variable: "--font-display",
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  weight: ["500", "600", "700"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-/** Brand wordmark «Blanco» (Latin calligraphy, as in portfolio mock). */
 const greatVibes = Great_Vibes({
-  variable: "--font-script",
-  subsets: ["latin"],
+  variable: "--font-display",
+  subsets: ["latin", "latin-ext", "cyrillic", "cyrillic-ext"],
   weight: "400",
   display: "swap",
 });
@@ -37,7 +28,7 @@ export default function RootLayout({
       lang="uk"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`${dmSans.variable} ${playfair.variable} ${greatVibes.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${greatVibes.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>

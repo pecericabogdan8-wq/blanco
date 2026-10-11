@@ -53,6 +53,7 @@ export function WriteoffDialog({
   const [qty, setQty] = useState("1");
   const [note, setNote] = useState("");
   const [history, setHistory] = useState<WriteoffRow[]>([]);
+  const [panel, setPanel] = useState<"form" | "journal">("form");
 
   const loadHistory = useCallback(async () => {
     try {
@@ -172,6 +173,7 @@ export function WriteoffDialog({
           setSize("");
           setQty("1");
           setNote("");
+          setPanel("form");
         }
       }}
     >
@@ -180,15 +182,82 @@ export function WriteoffDialog({
         showCloseButton
       >
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+          <DialogTitle className="font-display text-[1.85rem] leading-none sm:text-[2.15rem]">
             Списання зі складу
           </DialogTitle>
           <DialogDescription>
-            Бартер, офлайн-продаж або порча — мінусуємо залишок без замовлення.
-            Коментар зберігається в журналі нижче.
+            {panel === "form"
+              ? "Бартер, офлайн-продаж або порча — мінусуємо залишок без замовлення."
+              : "Історія списань з коментарями. Коментар зберігається в базі."}
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex flex-wrap gap-1 border border-border p-1">
+          <button
+            type="button"
+            onClick={() => setPanel("form")}
+            className={cn(
+              "flex-1 px-3 py-2 text-sm",
+              panel === "form" ? "bg-ink text-mist" : "bg-white hover:bg-[#faf9f7]"
+            )}
+          >
+            Списати
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPanel("journal");
+              void loadHistory();
+            }}
+            className={cn(
+              "flex-1 px-3 py-2 text-sm",
+              panel === "journal"
+                ? "bg-ink text-mist"
+                : "bg-white hover:bg-[#faf9f7]"
+            )}
+          >
+            Журнал{history.length > 0 ? ` (${history.length})` : ""}
+          </button>
+        </div>
+
+        {panel === "journal" ? (
+          <div className="space-y-2">
+            {history.length === 0 ? (
+              <p className="border border-dashed border-border bg-[#faf9f7] px-4 py-10 text-center text-sm text-muted-foreground">
+                Поки порожньо — після списання записи зʼявляться тут.
+              </p>
+            ) : (
+              <ul className="h-[min(52vh,420px)] space-y-2 overflow-y-auto border border-border p-2">
+                {history.map((row) => (
+                  <li
+                    key={row.id}
+                    className="border border-border bg-[#faf9f7] px-3 py-2 text-sm"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className="font-medium">
+                        −{row.qty} · {row.productName}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">
+                        {new Date(row.createdAt).toLocaleString("uk-UA")}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {row.variantSku || `${row.colorName} · ${row.size}`}
+                      {row.note ? ` · ${row.note}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPanel("form")}
+            >
+              До списання
+            </Button>
+          </div>
+        ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
           <div className="space-y-3">
             <Label htmlFor="writeoff-search">Товар</Label>
@@ -361,47 +430,26 @@ export function WriteoffDialog({
                   </div>
                 </div>
 
-                <Button type="button" onClick={() => void submit()}>
-                  Списати
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" onClick={() => void submit()}>
+                    Списати
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setPanel("journal");
+                      void loadHistory();
+                    }}
+                  >
+                    Журнал
+                  </Button>
+                </div>
               </>
             )}
           </div>
         </div>
-
-        <div className="border-t border-border pt-4">
-          <p className="text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
-            Журнал списань
-          </p>
-          {history.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Поки порожньо — після списання зʼявиться тут.
-            </p>
-          ) : (
-            <ul className="mt-2 max-h-40 space-y-2 overflow-y-auto text-sm">
-              {history.map((row) => (
-                <li
-                  key={row.id}
-                  className="border border-border bg-[#faf9f7] px-3 py-2"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="font-medium">
-                      −{row.qty} · {row.productName}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground tabular-nums">
-                      {new Date(row.createdAt).toLocaleString("uk-UA")}
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {row.variantSku ||
-                      `${row.colorName} · ${row.size}`}
-                    {row.note ? ` · ${row.note}` : ""}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

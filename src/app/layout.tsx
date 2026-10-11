@@ -1,4 +1,4 @@
-import { Cormorant_Garamond, DM_Sans, Great_Vibes } from "next/font/google";
+import { Caveat, DM_Sans, Great_Vibes } from "next/font/google";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -7,15 +7,18 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
-/** Page titles / dialogs — elegant but readable (Cyrillic). */
-const cormorant = Cormorant_Garamond({
+/**
+ * Page titles — handwritten feel (like Great Vibes) but with Cyrillic
+ * and clearer letterforms for UA copy.
+ */
+const caveat = Caveat({
   variable: "--font-display",
   subsets: ["latin", "latin-ext", "cyrillic"],
   weight: ["500", "600", "700"],
   display: "swap",
 });
 
-/** Brand script only (logo / hero accents) — Latin. */
+/** Brand wordmark «Blanco» only — Latin script. */
 const greatVibes = Great_Vibes({
   variable: "--font-script",
   subsets: ["latin"],
@@ -33,7 +36,7 @@ export default function RootLayout({
       lang="uk"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`${dmSans.variable} ${cormorant.variable} ${greatVibes.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${caveat.variable} ${greatVibes.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>

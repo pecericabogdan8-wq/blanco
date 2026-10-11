@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = ["dostavka", "povernennya", "zayavka"] as const;
@@ -15,6 +15,8 @@ export function ReturnsPageNav({
   items: { id: SectionId; label: string }[];
 }) {
   const [active, setActive] = useState<SectionId>("dostavka");
+  const lockRef = useRef(false);
+  const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const nodes = SECTIONS.map((id) => document.getElementById(id)).filter(
@@ -24,24 +26,41 @@ export function ReturnsPageNav({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort(
-            (a, b) =>
-              (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0)
-          );
-        const top = visible[0]?.target?.id as SectionId | undefined;
-        if (top && SECTIONS.includes(top)) setActive(top);
+        if (lockRef.current) return;
+        let best: { id: SectionId; ratio: number } | null = null;
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const id = e.target.id as SectionId;
+          if (!SECTIONS.includes(id)) continue;
+          const ratio = e.intersectionRatio;
+          if (!best || ratio > best.ratio) best = { id, ratio };
+        }
+        if (best) setActive(best.id);
       },
       {
-        rootMargin: "-20% 0px -55% 0px",
-        threshold: [0, 0.15, 0.35, 0.55],
+        rootMargin: "-96px 0px -55% 0px",
+        threshold: 0.2,
       }
     );
 
     for (const el of nodes) observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (lockTimer.current) clearTimeout(lockTimer.current);
+    };
   }, []);
+
+  function goTo(id: SectionId) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    lockRef.current = true;
+    setActive(id);
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (lockTimer.current) clearTimeout(lockTimer.current);
+    lockTimer.current = setTimeout(() => {
+      lockRef.current = false;
+    }, 700);
+  }
 
   return (
     <nav
@@ -51,20 +70,20 @@ export function ReturnsPageNav({
       {items.map((item) => {
         const isActive = active === item.id;
         return (
-          <a
+          <button
             key={item.id}
-            href={`#${item.id}`}
+            type="button"
             aria-current={isActive ? "true" : undefined}
             className={cn(
-              "shrink-0 px-3 py-2 text-[11px] tracking-[0.14em] uppercase transition",
+              "shrink-0 px-3 py-2 text-[11px] tracking-[0.14em] uppercase",
               isActive
                 ? "bg-ink text-mist"
                 : "text-muted-foreground hover:text-foreground"
             )}
-            onClick={() => setActive(item.id)}
+            onClick={() => goTo(item.id)}
           >
             {item.label}
-          </a>
+          </button>
         );
       })}
     </nav>

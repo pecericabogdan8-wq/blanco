@@ -32,8 +32,8 @@ export function ReturnRequestForm({ className }: { className?: string }) {
   const [orderId, setOrderId] = useState(
     () => searchParams.get("order") ?? ""
   );
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(() => user?.email ?? "");
+  const [phone, setPhone] = useState(() => user?.phone ?? "");
   const [reason, setReason] = useState<string>("quality_dislike");
   const [message, setMessage] = useState("");
   const [refundWanted, setRefundWanted] = useState(true);

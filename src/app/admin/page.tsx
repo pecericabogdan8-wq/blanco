@@ -266,7 +266,6 @@ export default function AdminPage() {
   const [bestsellerIds, setBestsellerIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [writeoffOpen, setWriteoffOpen] = useState(false);
-  const [skuEdited, setSkuEdited] = useState(false);
   const [returnAdminNotes, setReturnAdminNotes] = useState<
     Record<string, string>
   >({});
@@ -333,7 +332,6 @@ export default function AdminPage() {
 
   const resetCreateForm = useCallback(() => {
     setEditId(null);
-    setSkuEdited(false);
     setForm(emptyForm());
     void fillNextSku("sweaters");
   }, [fillNextSku]);
@@ -471,7 +469,8 @@ export default function AdminPage() {
       name: form.name.trim(),
       nameUk: form.name.trim(),
       slug: form.slug.trim(),
-      sku: skuTrim,
+      // SKU is system-managed: send only on create; never editable in UI
+      ...(editId ? {} : skuTrim ? { sku: skuTrim } : {}),
       category: form.category,
       description: form.description.trim(),
       descriptionUk: form.description.trim(),
@@ -1108,21 +1107,19 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-1">
                   <Label>Артикул</Label>
-                  <Input
-                    value={form.sku}
-                    onChange={(e) => {
-                      setSkuEdited(true);
-                      setForm((f) => ({
-                        ...f,
-                        sku: e.target.value.toUpperCase(),
-                      }));
-                    }}
-                    placeholder="генеруємо…"
-                    className="font-mono tracking-wide uppercase"
-                  />
+                  <div className="flex min-h-8 items-center border border-border bg-[#f7f6f3] px-2.5 py-1.5">
+                    <p
+                      className={cn(
+                        "font-mono text-sm tracking-wide uppercase text-foreground",
+                        !form.sku.trim() && "text-muted-foreground"
+                      )}
+                    >
+                      {form.sku.trim() || "генерується…"}
+                    </p>
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Генерується сам, можна змінити. Для кольору/розміру код
-                    варіанту додається автоматично.
+                    Присвоюється автоматично, змінити не можна. Варіанти —
+                    артикул + колір + розмір.
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -1132,7 +1129,7 @@ export default function AdminPage() {
                     onValueChange={(v) => {
                       const cat = (v ?? "") as Category | "";
                       setForm((f) => ({ ...f, category: cat }));
-                      if (!editId && !skuEdited && cat) {
+                      if (!editId && cat) {
                         void fillNextSku(cat);
                       }
                     }}
@@ -1876,7 +1873,6 @@ export default function AdminPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              setSkuEdited(true);
                               setEditId(p.id);
                               setForm(productToForm(p));
                               if (

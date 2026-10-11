@@ -45,7 +45,7 @@ export default function ReviewsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className="text-3xl font-bold tracking-tight uppercase sm:text-4xl">
+      <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
         {t("title")}
       </h1>
       <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
@@ -105,7 +105,7 @@ export default function ReviewsPage() {
       {mentions.length > 0 && (
         <section className="mt-20">
           <div className="mb-2 flex items-baseline justify-center gap-2">
-            <h2 className="text-2xl font-bold tracking-tight uppercase sm:text-3xl">
+            <h2 className="font-display text-2xl tracking-tight sm:text-3xl">
               {t("instagramTitle")}{" "}
               <span className="text-[#c41e3a]">Instagram</span>
             </h2>

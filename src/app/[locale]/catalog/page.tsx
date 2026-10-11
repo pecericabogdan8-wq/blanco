@@ -195,7 +195,7 @@ function CatalogInner() {
             <p className="mt-2 text-sm text-muted-foreground">{countLabel}</p>
           </div>
         ) : (
-          <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">
+          <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
             {t("title")}
           </h1>
         )}

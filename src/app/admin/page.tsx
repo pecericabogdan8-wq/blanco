@@ -581,7 +581,7 @@ export default function AdminPage() {
             <p className="text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
               Admin
             </p>
-            <h1 className="text-2xl font-medium tracking-tight sm:text-3xl">
+            <h1 className="font-display text-2xl tracking-tight sm:text-3xl">
               Панель магазину
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">

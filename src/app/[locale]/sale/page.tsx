@@ -36,7 +36,7 @@ export default function SalePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
       <div className="mb-10 max-w-xl">
-        <h1 className="text-4xl font-medium tracking-tight sm:text-5xl">
+        <h1 className="font-display text-4xl tracking-tight sm:text-5xl">
           {t("title")}
         </h1>
         <p className="mt-3 text-muted-foreground">{t("subtitle")}</p>

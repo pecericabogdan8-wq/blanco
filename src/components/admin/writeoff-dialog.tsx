@@ -216,12 +216,13 @@ export function WriteoffDialog({
                 : "bg-white hover:bg-[#faf9f7]"
             )}
           >
-            Журнал{history.length > 0 ? ` (${history.length})` : ""}
+            Історія списань
+            {history.length > 0 ? ` (${history.length})` : ""}
           </button>
         </div>
 
         {panel === "journal" ? (
-          <div className="space-y-2">
+          <div>
             {history.length === 0 ? (
               <p className="border border-dashed border-border bg-[#faf9f7] px-4 py-10 text-center text-sm text-muted-foreground">
                 Поки порожньо — після списання записи зʼявляться тут.
@@ -249,13 +250,6 @@ export function WriteoffDialog({
                 ))}
               </ul>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPanel("form")}
-            >
-              До списання
-            </Button>
           </div>
         ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -430,21 +424,9 @@ export function WriteoffDialog({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" onClick={() => void submit()}>
-                    Списати
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setPanel("journal");
-                      void loadHistory();
-                    }}
-                  >
-                    Журнал
-                  </Button>
-                </div>
+                <Button type="button" onClick={() => void submit()}>
+                  Списати
+                </Button>
               </>
             )}
           </div>

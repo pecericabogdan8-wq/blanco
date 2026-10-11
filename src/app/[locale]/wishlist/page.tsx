@@ -15,7 +15,7 @@ function WishlistInner() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className="text-4xl font-medium tracking-tight">{t("title")}</h1>
+      <h1 className="font-display text-4xl tracking-tight">{t("title")}</h1>
       <p className="mt-2 text-muted-foreground">
         {t("saved", { count: items.length })}
       </p>

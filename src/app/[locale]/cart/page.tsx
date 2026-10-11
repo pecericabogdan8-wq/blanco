@@ -34,7 +34,7 @@ function CartInner() {
   if (cart.length === 0 || lines.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6">
-        <h1 className="text-4xl font-medium tracking-tight">{t("empty")}</h1>
+        <h1 className="font-display text-4xl tracking-tight">{t("empty")}</h1>
         <p className="mt-2 text-muted-foreground">{t("emptyHint")}</p>
         <Button className="mt-8" render={<Link href="/catalog" />}>
           {t("toCatalog")}
@@ -45,7 +45,7 @@ function CartInner() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className="text-4xl font-medium tracking-tight">{t("title")}</h1>
+      <h1 className="font-display text-4xl tracking-tight">{t("title")}</h1>
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_320px]">
         <ul className="divide-y divide-border">
           {lines.map(({ item, product, color, price }) => {

@@ -1759,7 +1759,10 @@ export default function AdminPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setProductsView("trash")}
-                  className="relative text-muted-foreground transition-colors hover:border-[#9b1c1c]/50 hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
+                  className={cn(
+                    "relative transition-colors hover:border-[#9b1c1c]/50 hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]",
+                    trash.length === 0 && "text-muted-foreground"
+                  )}
                 >
                   <Trash2 className="size-3.5" />
                   Смітник

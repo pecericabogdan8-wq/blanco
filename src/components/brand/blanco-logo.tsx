@@ -35,8 +35,8 @@ export function BlancoLogo({
       {withWordmark && (
         <span
           className={cn(
-            // Great_Vibes: високий B-штрих тягне box вгору — трохи опускаємо
-            "font-display block max-[340px]:hidden translate-y-[0.16em] text-[1.55rem] leading-none sm:text-[2.05rem]",
+            // Great_Vibes script: високий B-штрих тягне box вгору — трохи опускаємо
+            "font-script block max-[340px]:hidden translate-y-[0.16em] text-[1.55rem] leading-none sm:text-[2.05rem]",
             invert ? "text-white" : "text-foreground"
           )}
         >

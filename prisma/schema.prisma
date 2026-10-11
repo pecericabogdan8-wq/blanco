@@ -378,3 +378,22 @@ model SkuRegistry {
   @@index([kind])
   @@index([refId])
 }
+
+/// Offline write-off audit (barter / damage / offline sale) — note + qty history in admin UI.
+model StockWriteoff {
+  id          String   @id @default(cuid())
+  productId   String?
+  productName String
+  productSku  String?
+  variantSku  String?
+  colorKey    String
+  colorName   String   @default("")
+  size        String
+  qty         Int
+  note        String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([productId])
+}

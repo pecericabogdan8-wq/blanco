@@ -96,7 +96,7 @@ export default function HomePage() {
         {/* BlancoPortfolio hero: centered script mark + bottom CTA */}
         <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl flex-col items-center justify-center px-4 pt-20 pb-16 sm:px-8 lg:px-12">
           <div className="reveal text-center">
-            <p className="font-display text-[clamp(3.25rem,12vw,6.5rem)] leading-[0.9] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)]">
+            <p className="font-script text-[clamp(3.25rem,12vw,6.5rem)] leading-[0.9] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)]">
               Blanco
             </p>
             <p className="mx-auto mt-4 max-w-sm text-[13px] leading-relaxed text-white/88 sm:mt-5 sm:text-[15px]">
@@ -247,7 +247,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-black/25" />
         <div className="relative z-10 flex min-h-[55vh] items-end px-6 pb-10 sm:px-10">
           <div>
-            <p className="font-display text-5xl text-white sm:text-6xl">
+            <p className="font-script text-5xl text-white sm:text-6xl">
               Blanco
             </p>
             <p className="mt-2 max-w-sm text-sm text-white/75">{t("tagline")}</p>

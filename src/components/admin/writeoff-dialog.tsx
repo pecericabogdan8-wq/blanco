@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,18 @@ function invKey(colorKey: string, size: string) {
   return `${colorKey}:${size}`;
 }
 
+type WriteoffRow = {
+  id: string;
+  productName: string;
+  productSku?: string | null;
+  variantSku?: string | null;
+  colorName: string;
+  size: string;
+  qty: number;
+  note?: string | null;
+  createdAt: string;
+};
+
 export function WriteoffDialog({
   open,
   onOpenChange,
@@ -40,6 +52,21 @@ export function WriteoffDialog({
   const [size, setSize] = useState("");
   const [qty, setQty] = useState("1");
   const [note, setNote] = useState("");
+  const [history, setHistory] = useState<WriteoffRow[]>([]);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch("/api/writeoffs");
+      const data = await res.json();
+      if (data.ok) setHistory(data.writeoffs ?? []);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) void loadHistory();
+  }, [open, loadHistory]);
 
   const product = useMemo(
     () => products.find((p) => p.id === productId) ?? null,
@@ -91,6 +118,7 @@ export function WriteoffDialog({
       toast.error(`На складі лише ${have}`);
       return;
     }
+    const color = product.colors.find((x) => x.id === c);
     const inventory = { ...product.inventory, [key]: have - n };
     const res = await fetch(`/api/products/${product.id}`, {
       method: "PATCH",
@@ -102,14 +130,33 @@ export function WriteoffDialog({
       toast.error(data.error ?? "Помилка списання");
       return;
     }
+
     const tip = note.trim();
+    const code =
+      variantCode ??
+      buildVariantSku(product.sku || product.slug, c, s);
+    await fetch("/api/writeoffs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: product.id,
+        productName: product.nameUk || product.name,
+        productSku: product.sku || null,
+        variantSku: code,
+        colorKey: c,
+        colorName: color?.nameUk || color?.name || c,
+        size: s,
+        qty: n,
+        note: tip || null,
+      }),
+    });
+
     toast.success(
-      tip
-        ? `Списано ${n} × ${variantCode ?? s} (${tip})`
-        : `Списано ${n} × ${variantCode ?? s}`
+      tip ? `Списано ${n} × ${code} (${tip})` : `Списано ${n} × ${code}`
     );
     setQty("1");
     setNote("");
+    await loadHistory();
     await onDone();
   }
 
@@ -129,16 +176,16 @@ export function WriteoffDialog({
       }}
     >
       <DialogContent
-        className="max-h-[min(92vh,720px)] overflow-y-auto rounded-none sm:max-w-3xl"
+        className="max-h-[min(92vh,760px)] overflow-y-auto rounded-none sm:max-w-3xl"
         showCloseButton
       >
         <DialogHeader>
-          <DialogTitle className="text-lg tracking-wide uppercase">
+          <DialogTitle className="font-display text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
             Списання зі складу
           </DialogTitle>
           <DialogDescription>
             Бартер, офлайн-продаж або порча — мінусуємо залишок без замовлення.
-            Код варіанту: артикул + колір + розмір.
+            Коментар зберігається в журналі нижче.
           </DialogDescription>
         </DialogHeader>
 
@@ -152,7 +199,7 @@ export function WriteoffDialog({
               placeholder="Назва або артикул…"
               className="bg-white"
             />
-            <ul className="max-h-[280px] space-y-1 overflow-y-auto border border-border sm:max-h-[360px]">
+            <ul className="max-h-[240px] space-y-1 overflow-y-auto border border-border sm:max-h-[300px]">
               {choices.length === 0 && (
                 <li className="px-3 py-6 text-center text-sm text-muted-foreground">
                   Нічого не знайдено
@@ -320,6 +367,40 @@ export function WriteoffDialog({
               </>
             )}
           </div>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <p className="text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
+            Журнал списань
+          </p>
+          {history.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Поки порожньо — після списання зʼявиться тут.
+            </p>
+          ) : (
+            <ul className="mt-2 max-h-40 space-y-2 overflow-y-auto text-sm">
+              {history.map((row) => (
+                <li
+                  key={row.id}
+                  className="border border-border bg-[#faf9f7] px-3 py-2"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="font-medium">
+                      −{row.qty} · {row.productName}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground tabular-nums">
+                      {new Date(row.createdAt).toLocaleString("uk-UA")}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {row.variantSku ||
+                      `${row.colorName} · ${row.size}`}
+                    {row.note ? ` · ${row.note}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </DialogContent>
     </Dialog>

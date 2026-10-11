@@ -5,10 +5,17 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { HydratedGate } from "@/components/shop/hydrated-gate";
+import {
+  FIELD_MSG,
+  isBlank,
+  isValidEmail,
+  type FieldErrors,
+} from "@/lib/form-field";
 import { formatUAH } from "@/lib/format";
 import type { PaymentMethod } from "@/lib/types";
 import { useShopStore } from "@/store/shop-store";
@@ -23,6 +30,7 @@ function CheckoutInner() {
 
   const [method, setMethod] = useState<PaymentMethod>("card");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -31,6 +39,27 @@ function CheckoutInner() {
     address: "",
     novaPoshta: "",
   });
+
+  function setField<K extends keyof typeof form>(key: K, value: string) {
+    setForm((f) => ({ ...f, [key]: value }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
+  function validate(): FieldErrors {
+    const next: FieldErrors = {};
+    if (isBlank(form.name)) next.name = FIELD_MSG.required;
+    if (isBlank(form.email)) next.email = FIELD_MSG.required;
+    else if (!isValidEmail(form.email)) next.email = FIELD_MSG.email;
+    if (isBlank(form.phone)) next.phone = FIELD_MSG.required;
+    if (isBlank(form.city)) next.city = FIELD_MSG.required;
+    if (isBlank(form.address)) next.address = FIELD_MSG.required;
+    return next;
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -69,10 +98,9 @@ function CheckoutInner() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.email || !form.phone || !form.city || !form.address) {
-      toast.error(t("fillRequired"));
-      return;
-    }
+    const next = validate();
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
     setLoading(true);
     try {
@@ -115,6 +143,7 @@ function CheckoutInner() {
       </h1>
       <form
         onSubmit={onSubmit}
+        noValidate
         className="mt-8 grid gap-8 lg:mt-10 lg:grid-cols-[1fr_minmax(0,20rem)] lg:gap-10"
       >
         <div className="space-y-8">
@@ -126,17 +155,21 @@ function CheckoutInner() {
                 <Input
                   id="name"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => setField("name", e.target.value)}
+                  aria-invalid={Boolean(errors.name)}
                 />
+                <FieldError message={errors.name} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">{t("phone")}</Label>
                 <Input
                   id="phone"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(e) => setField("phone", e.target.value)}
                   placeholder="+380…"
+                  aria-invalid={Boolean(errors.phone)}
                 />
+                <FieldError message={errors.phone} />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="email">{t("email")}</Label>
@@ -144,23 +177,27 @@ function CheckoutInner() {
                   id="email"
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  onChange={(e) => setField("email", e.target.value)}
+                  aria-invalid={Boolean(errors.email)}
                 />
+                <FieldError message={errors.email} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="city">{t("city")}</Label>
                 <Input
                   id="city"
                   value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  onChange={(e) => setField("city", e.target.value)}
+                  aria-invalid={Boolean(errors.city)}
                 />
+                <FieldError message={errors.city} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="np">{t("np")}</Label>
                 <Input
                   id="np"
                   value={form.novaPoshta}
-                  onChange={(e) => setForm({ ...form, novaPoshta: e.target.value })}
+                  onChange={(e) => setField("novaPoshta", e.target.value)}
                   placeholder={t("npPlaceholder")}
                 />
               </div>
@@ -169,8 +206,10 @@ function CheckoutInner() {
                 <Input
                   id="address"
                   value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  onChange={(e) => setField("address", e.target.value)}
+                  aria-invalid={Boolean(errors.address)}
                 />
+                <FieldError message={errors.address} />
               </div>
             </div>
           </section>

@@ -5,8 +5,15 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  FIELD_MSG,
+  isBlank,
+  isValidEmail,
+  type FieldErrors,
+} from "@/lib/form-field";
 import { useShopStore } from "@/store/shop-store";
 
 export default function RegisterPage() {
@@ -17,9 +24,33 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+
+  function clearError(key: string) {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
+  function validate(): FieldErrors {
+    const next: FieldErrors = {};
+    if (isBlank(name)) next.name = FIELD_MSG.required;
+    if (isBlank(email)) next.email = FIELD_MSG.required;
+    else if (!isValidEmail(email)) next.email = FIELD_MSG.email;
+    if (isBlank(password)) next.password = FIELD_MSG.required;
+    else if (password.trim().length < 6) next.password = FIELD_MSG.passwordMin;
+    return next;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const next = validate();
+    setErrors(next);
+    if (Object.keys(next).length) return;
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -43,15 +74,19 @@ export default function RegisterPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
       <h1 className="font-display text-4xl font-bold">{t("registerTitle")}</h1>
-      <form onSubmit={onSubmit} className="mt-8 space-y-4">
+      <form onSubmit={onSubmit} noValidate className="mt-8 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">{t("name")}</Label>
           <Input
             id="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
+            onChange={(e) => {
+              setName(e.target.value);
+              clearError("name");
+            }}
+            aria-invalid={Boolean(errors.name)}
           />
+          <FieldError message={errors.name} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">{t("email")}</Label>
@@ -59,9 +94,13 @@ export default function RegisterPage() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearError("email");
+            }}
+            aria-invalid={Boolean(errors.email)}
           />
+          <FieldError message={errors.email} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">{t("password")}</Label>
@@ -69,10 +108,13 @@ export default function RegisterPage() {
             id="password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={6}
-            required
+            onChange={(e) => {
+              setPassword(e.target.value);
+              clearError("password");
+            }}
+            aria-invalid={Boolean(errors.password)}
           />
+          <FieldError message={errors.password} />
         </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "…" : t("createAccount")}

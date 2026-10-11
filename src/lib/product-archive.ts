@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { productInclude } from "@/lib/product-mapper";
+import { reserveProductSkuSet } from "@/lib/sku";
 
 /** Persist a full product snapshot before hard delete (backend recovery). */
 export async function archiveProductBeforeDelete(
@@ -11,6 +12,9 @@ export async function archiveProductBeforeDelete(
     include: productInclude,
   });
   if (!full) return null;
+
+  // Ban style + variant SKUs forever (even after row is gone)
+  await reserveProductSkuSet(productId);
 
   return prisma.productArchive.create({
     data: {

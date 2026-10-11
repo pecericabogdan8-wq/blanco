@@ -10,7 +10,7 @@ const CAT_CODE = {
 const prisma = new PrismaClient();
 
 function normalizeSkuPart(value) {
-  return value
+  return String(value ?? "")
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "-")
@@ -24,16 +24,32 @@ function buildVariantSku(productSku, colorKey, size) {
     .join("-");
 }
 
+async function reserve(sku, kind, refId) {
+  const normalized = normalizeSkuPart(sku);
+  if (!normalized) return;
+  await prisma.skuRegistry.upsert({
+    where: { sku: normalized },
+    create: { sku: normalized, kind, refId: refId ?? null },
+    update: { kind, refId: refId ?? null },
+  });
+}
+
 async function allocate(category) {
   const code = CAT_CODE[category] ?? "XX";
   const prefix = `BL-${code}-`;
   for (let i = 0; i < 48; i++) {
     const candidate = `${prefix}${randomInt(100000, 1000000)}`;
-    const clash = await prisma.product.findFirst({
+    const onProduct = await prisma.product.findFirst({
       where: { sku: candidate },
       select: { id: true },
     });
-    if (!clash) return candidate;
+    if (onProduct) continue;
+    const onReg = await prisma.skuRegistry.findUnique({
+      where: { sku: candidate },
+      select: { sku: true },
+    });
+    if (onReg) continue;
+    return candidate;
   }
   throw new Error("Could not allocate unique SKU");
 }
@@ -56,19 +72,50 @@ const products = await prisma.product.findMany({
 
 for (const product of products) {
   const base = product.sku || normalizeSkuPart(product.slug);
+  if (product.sku) await reserve(product.sku, "product", product.id);
+
   const colorById = new Map(product.colors.map((c) => [c.id, c.key]));
   for (const v of product.variants) {
     const colorKey = colorById.get(v.colorId);
     if (!colorKey) continue;
     const next = buildVariantSku(base, colorKey, v.size);
-    if (v.sku === next) continue;
-    await prisma.productVariant.update({
-      where: { id: v.id },
-      data: { sku: next },
-    });
-    console.log(`variant ${v.id} → ${next}`);
+    if (v.sku !== next) {
+      await prisma.productVariant.update({
+        where: { id: v.id },
+        data: { sku: next },
+      });
+      console.log(`variant ${v.id} → ${next}`);
+    }
+    await reserve(next, "variant", v.id);
   }
 }
 
-console.log("Done");
+const archives = await prisma.productArchive.findMany({
+  select: { productId: true, snapshot: true },
+});
+
+for (const row of archives) {
+  let snap;
+  try {
+    snap = JSON.parse(row.snapshot);
+  } catch {
+    continue;
+  }
+  if (snap?.sku) await reserve(snap.sku, "product", row.productId);
+  const colors = Array.isArray(snap?.colors) ? snap.colors : [];
+  const variants = Array.isArray(snap?.variants) ? snap.variants : [];
+  const colorById = new Map(colors.map((c) => [c.id, c.key]));
+  const base = snap?.sku || normalizeSkuPart(snap?.slug ?? "");
+  for (const v of variants) {
+    const colorKey = colorById.get(v.colorId);
+    const code =
+      v.sku ||
+      (colorKey && base ? buildVariantSku(base, colorKey, v.size) : null);
+    if (code) await reserve(code, "variant", v.id);
+  }
+}
+
+console.log(
+  `Done. Registry size: ${await prisma.skuRegistry.count()}`
+);
 await prisma.$disconnect();

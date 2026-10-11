@@ -365,3 +365,16 @@ model ProductArchive {
   @@index([slug])
   @@index([deletedAt])
 }
+
+/// Forever-unique SKU ledger (active, trash, and hard-deleted products).
+/// Product.sku / ProductVariant.sku may disappear on hard delete; this table keeps the ban.
+model SkuRegistry {
+  sku       String   @id
+  kind      String // product | variant
+  /// productId or variantId when still known
+  refId     String?
+  createdAt DateTime @default(now())
+
+  @@index([kind])
+  @@index([refId])
+}

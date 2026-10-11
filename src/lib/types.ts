@@ -15,6 +15,8 @@ export type InventoryKey = string;
 export type Product = {
   id: string;
   slug: string;
+  /** Optional product-level SKU prefix (admin); variants have their own SKUs */
+  sku?: string;
   /** English (DB primary) */
   name: string;
   nameUk?: string;

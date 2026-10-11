@@ -56,6 +56,7 @@ export function mapProduct(p: DbProductFull): Product {
   return {
     id: p.id,
     slug: p.slug,
+    sku: p.sku || undefined,
     name: p.name,
     nameUk: p.nameUk || undefined,
     category: p.category as Product["category"],

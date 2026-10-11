@@ -1,22 +1,16 @@
 "use client";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { use, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Heart, ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ProductCard } from "@/components/shop/product-card";
 import { ProductGallery } from "@/components/shop/product-gallery";
+import { SizeGuideDialog } from "@/components/shop/size-guide-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { formatUAH, productPrice, stockFor, totalStock } from "@/lib/format";
 import {
   localizedColorName,
-  localizedFigure,
   localizedProductDescription,
   localizedProductDetails,
   localizedProductName,
@@ -48,7 +42,7 @@ export default function ProductPage({
 }) {
   const { slug } = use(params);
   const t = useTranslations("Product");
-  const tNav = useTranslations("Nav");
+  const router = useRouter();
   const storeProducts = useShopStore((s) => s.products);
   const setProducts = useShopStore((s) => s.setProducts);
   const addToCart = useShopStore((s) => s.addToCart);
@@ -201,8 +195,24 @@ export default function ProductPage({
       size: activeSize,
       qty: 1,
     });
-    if (res.ok) toast.success(t("addedToCart"));
-    else toast.error(res.error);
+    if (res.ok) {
+      toast.success(t("addedToCart"), {
+        action: {
+          label: t("goToCart"),
+          onClick: () => router.push("/cart"),
+        },
+      });
+    } else toast.error(res.error);
+  }
+
+  async function handleWishlist() {
+    if (!product) return;
+    try {
+      const next = await toggleWishlist(product.id);
+      toast.success(next ? t("addedWishlist") : t("removedWishlist"));
+    } catch {
+      toast.error(t("wishlistError"));
+    }
   }
 
   const inStockNow = !discontinued && anyStock && stock > 0;
@@ -230,24 +240,25 @@ export default function ProductPage({
             {localizedProductName(product)}
           </h1>
 
-          <p className="mt-2 text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
-            {t("skuLabel")}: {product.slug}
-          </p>
-
-          <p
-            className={cn(
-              "mt-3 text-sm font-medium",
-              inStockNow ? "text-emerald-700" : "text-destructive"
-            )}
-          >
-            {discontinued
-              ? t("discontinued")
-              : !anyStock
-                ? t("allSoldOut")
-                : stock > 0
-                  ? t("inStockLabel")
-                  : t("outOfStockShort")}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <p className="text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
+              {product.sku || product.slug}
+            </p>
+            <p
+              className={cn(
+                "text-sm font-medium",
+                inStockNow ? "text-emerald-700" : "text-destructive"
+              )}
+            >
+              {discontinued
+                ? t("discontinued")
+                : !anyStock
+                  ? t("allSoldOut")
+                  : stock > 0
+                    ? t("inStockLabel")
+                    : t("outOfStockShort")}
+            </p>
+          </div>
 
           {discontinued && (
             <div className="mt-4 border border-border bg-[#f3f2ef] px-4 py-3">
@@ -266,7 +277,7 @@ export default function ProductPage({
             </div>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-4 border-b border-border pb-6">
+          <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-border pb-6">
             <div className="flex flex-wrap items-baseline gap-2">
               <p
                 className={cn(
@@ -283,15 +294,33 @@ export default function ProductPage({
               )}
             </div>
             {!discontinued && (
-              <Button
-                size="lg"
-                onClick={handleAdd}
-                disabled={purchaseBlocked}
-                className="hidden bg-[#c41e3a] tracking-[0.12em] uppercase hover:bg-[#a81830] disabled:bg-ink/30 md:inline-flex md:min-w-[10rem]"
-              >
-                <ShoppingBag className="size-4" />
-                {purchaseBlocked ? t("soldOut") : t("buy")}
-              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  size="lg"
+                  onClick={handleAdd}
+                  disabled={purchaseBlocked}
+                  className="bg-[#c41e3a] tracking-[0.12em] uppercase hover:bg-[#a81830] disabled:bg-ink/30 sm:min-w-[10rem]"
+                >
+                  <ShoppingBag className="size-4" />
+                  {purchaseBlocked ? t("soldOut") : t("buy")}
+                </Button>
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  className="size-11 shrink-0 bg-white px-0"
+                  title={wished ? t("removeWishlist") : t("addWishlist")}
+                  aria-label={wished ? t("removeWishlist") : t("addWishlist")}
+                  onClick={() => void handleWishlist()}
+                >
+                  <Heart
+                    className={cn(
+                      "size-4",
+                      wished && "fill-current text-destructive"
+                    )}
+                  />
+                </Button>
+              </div>
             )}
           </div>
 
@@ -353,13 +382,8 @@ export default function ProductPage({
                   <p className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
                     {t("size")}
                   </p>
-                  {product.sizeChart && (
-                    <a
-                      href="#size-guide"
-                      className="text-[11px] text-foreground underline underline-offset-2"
-                    >
-                      {t("sizeGuide")}
-                    </a>
+                  {product.sizeChart && product.sizeChart.length > 0 && (
+                    <SizeGuideDialog sizeChart={product.sizeChart} />
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -412,136 +436,37 @@ export default function ProductPage({
                 </div>
               )}
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:hidden">
-                <Button
-                  size="lg"
-                  onClick={handleAdd}
-                  disabled={purchaseBlocked}
-                  className="w-full bg-[#c41e3a] tracking-[0.12em] uppercase hover:bg-[#a81830] disabled:bg-ink/30"
-                >
-                  <ShoppingBag className="size-4" />
-                  {purchaseBlocked ? t("soldOut") : t("buy")}
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full bg-white"
-                  onClick={async () => {
-                    try {
-                      const next = await toggleWishlist(product.id);
-                      toast.success(
-                        next ? t("addedWishlist") : t("removedWishlist")
-                      );
-                    } catch {
-                      toast.error(t("wishlistError"));
-                    }
-                  }}
-                >
-                  <Heart
-                    className={cn(
-                      "size-4",
-                      wished && "fill-current text-destructive"
-                    )}
-                  />
-                  {t("wishlist")}
-                </Button>
-              </div>
-
-              <div className="mt-4 hidden md:block">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="bg-white"
-                  onClick={async () => {
-                    try {
-                      const next = await toggleWishlist(product.id);
-                      toast.success(
-                        next ? t("addedWishlist") : t("removedWishlist")
-                      );
-                    } catch {
-                      toast.error(t("wishlistError"));
-                    }
-                  }}
-                >
-                  <Heart
-                    className={cn(
-                      "size-4",
-                      wished && "fill-current text-destructive"
-                    )}
-                  />
-                  {t("wishlist")}
-                </Button>
-              </div>
             </>
           )}
 
-          <div className="mt-8 space-y-4 border-t border-border pt-8">
-            <Accordion>
-              {otherDetails.length > 0 && (
-                <AccordionItem value="details">
-                  <AccordionTrigger>{t("details")}</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2.5 text-sm leading-relaxed text-foreground/80">
-                      {otherDetails.map((d) => (
-                        <li key={d} className="flex gap-3">
-                          <span className="mt-1.5 size-1.5 shrink-0 bg-[#c41e3a]" />
-                          <span>{d}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-              {(careLines.length > 0 || otherDetails.length === 0) && (
-                <AccordionItem value="care">
-                  <AccordionTrigger>{t("care")}</AccordionTrigger>
-                  <AccordionContent>
-                    {careLines.length > 0 ? (
-                      <ul className="space-y-2 text-sm leading-relaxed text-muted-foreground">
-                        {careLines.map((d) => (
-                          <li key={d}>{d}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {tNav("delivery")} — blanco
-                      </p>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-              {product.sizeChart && (
-                <AccordionItem value="size" className="scroll-mt-24" id="size-guide">
-                  <AccordionTrigger>{t("sizeGuide")}</AccordionTrigger>
-                  <AccordionContent>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      {t("sizeHint")}
-                    </p>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b text-left">
-                          <th className="py-2">{t("size")}</th>
-                          <th>{t("length")}</th>
-                          <th>{t("width")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {product.sizeChart.map((row) => (
-                          <tr
-                            key={row.size}
-                            className="border-b border-border/50"
-                          >
-                            <td className="py-2 font-medium">{row.size}</td>
-                            <td>{row.length}</td>
-                            <td>{row.width ?? row.chest ?? "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-            </Accordion>
+          <div className="mt-8 space-y-6 border-t border-border pt-8">
+            {otherDetails.length > 0 && (
+              <div>
+                <p className="mb-3 text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
+                  {t("details")}
+                </p>
+                <ul className="space-y-2.5 text-sm leading-relaxed text-foreground/80">
+                  {otherDetails.map((d) => (
+                    <li key={d} className="flex gap-3">
+                      <span className="mt-1.5 size-1.5 shrink-0 bg-[#c41e3a]" />
+                      <span>{d}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {careLines.length > 0 && (
+              <div>
+                <p className="mb-3 text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
+                  {t("care")}
+                </p>
+                <ul className="space-y-2 text-sm leading-relaxed text-muted-foreground">
+                  {careLines.map((d) => (
+                    <li key={d}>{d}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <Link
               href="/returns#zayavka"

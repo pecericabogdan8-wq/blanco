@@ -71,6 +71,7 @@ function productExtendedText(product: Product): string {
       product.figureUk ?? "",
       product.figure ?? "",
       product.slug,
+      product.sku ?? "",
       ...(product.tags ?? []),
     ].join(" ")
   );
@@ -90,6 +91,8 @@ export function productMatchesQuery(product: Product, q: string): boolean {
   const needle = normalizeSearchQuery(q);
   if (!needle) return false;
   if (productCardTitleText(product).includes(needle)) return true;
+  const sku = normalizeSearchQuery(product.sku ?? "");
+  if (sku && sku.includes(needle)) return true;
   if (needle.length >= 3 && productExtendedText(product).includes(needle)) {
     return true;
   }

@@ -4,6 +4,7 @@ import { cleanImageList } from "@/lib/product-images";
 import { productMatchesQuery } from "@/lib/localize-product";
 import { requireAdmin } from "@/lib/auth";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api";
+import { allocateProductSku } from "@/lib/sku";
 
 export async function GET(req: Request) {
   try {
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
       name,
       nameUk = "",
       slug,
+      sku,
       category,
       description,
       descriptionUk = "",
@@ -107,6 +109,13 @@ export async function POST(req: Request) {
     const exists = await prisma.product.findUnique({ where: { slug } });
     if (exists) return jsonError("Slug already exists", 409);
 
+    let skuValue: string;
+    try {
+      skuValue = await allocateProductSku(String(category), sku);
+    } catch (e) {
+      return jsonError(e instanceof Error ? e.message : "SKU error", 409);
+    }
+
     const imageUrls = cleanImageList(images as string[]);
     const colorList = (
       colors as {
@@ -126,6 +135,7 @@ export async function POST(req: Request) {
         name: String(name),
         nameUk: String(nameUk),
         slug,
+        sku: skuValue,
         category,
         description: String(description),
         descriptionUk: String(descriptionUk),

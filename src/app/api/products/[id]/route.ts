@@ -39,6 +39,21 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (body.name != null) data.name = String(body.name);
     if (body.nameUk != null) data.nameUk = String(body.nameUk);
     if (body.slug != null) data.slug = String(body.slug);
+    if (body.sku !== undefined) {
+      const nextSku = String(body.sku ?? "")
+        .trim()
+        .toUpperCase();
+      if (!nextSku) {
+        data.sku = null;
+      } else {
+        const clash = await prisma.product.findFirst({
+          where: { sku: nextSku, NOT: { id: existing.id } },
+          select: { id: true },
+        });
+        if (clash) return jsonError(`Артикул «${nextSku}» уже зайнятий`, 409);
+        data.sku = nextSku;
+      }
+    }
     if (body.category != null) data.category = String(body.category);
     if (body.description != null) data.description = String(body.description);
     if (body.descriptionUk != null)

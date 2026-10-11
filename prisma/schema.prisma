@@ -66,6 +66,8 @@ enum ReturnRequestStatus {
   rejected
   awaiting_parcel
   received
+  /// Item failed inspection — send back to customer (no stock restore)
+  sent_back
   refunded
   exchanged
   closed
@@ -110,6 +112,8 @@ model Session {
 model Product {
   id             String   @id @default(cuid())
   slug           String   @unique
+  /// Human-facing article (e.g. BL-SW-001) — unique when set
+  sku            String?  @unique
   /// English (canonical in DB)
   name           String
   nameUk         String   @default("")

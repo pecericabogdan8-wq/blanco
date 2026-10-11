@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useShopStore } from "@/store/shop-store";
+import { cn } from "@/lib/utils";
 
 const REASONS = [
   "defective",
@@ -23,9 +25,10 @@ const REASONS = [
   "other",
 ] as const;
 
-export function ReturnRequestForm() {
+export function ReturnRequestForm({ className }: { className?: string }) {
   const t = useTranslations("Returns");
   const searchParams = useSearchParams();
+  const user = useShopStore((s) => s.user);
   const [orderId, setOrderId] = useState(
     () => searchParams.get("order") ?? ""
   );
@@ -35,6 +38,13 @@ export function ReturnRequestForm() {
   const [message, setMessage] = useState("");
   const [refundWanted, setRefundWanted] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setEmail((e) => e || user.email || "");
+    setPhone((p) => p || user.phone || "");
+  }, [user]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,6 +67,7 @@ export function ReturnRequestForm() {
         toast.error(data.error ?? t("formError"));
         return;
       }
+      setDone(true);
       toast.success(t("formSuccess"));
       setMessage("");
     } catch {
@@ -66,11 +77,44 @@ export function ReturnRequestForm() {
     }
   }
 
+  if (done) {
+    return (
+      <div
+        id="zayavka"
+        className={cn(
+          "scroll-mt-28 space-y-3 border border-border bg-white p-5 sm:p-6",
+          className
+        )}
+      >
+        <h2 className="text-lg font-semibold tracking-wide uppercase">
+          {t("afterTitle")}
+        </h2>
+        <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
+          <li>{t("after1")}</li>
+          <li>{t("after2")}</li>
+          <li>{t("after3")}</li>
+          <li>{t("after4")}</li>
+        </ol>
+        <p className="text-sm text-muted-foreground">{t("afterSupport")}</p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setDone(false)}
+        >
+          {t("formAnother")}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <form
       id="zayavka"
       onSubmit={handleSubmit}
-      className="scroll-mt-24 space-y-4 border border-border bg-white p-5 sm:p-6"
+      className={cn(
+        "scroll-mt-28 space-y-4 border border-border bg-white p-5 sm:p-6",
+        className
+      )}
     >
       <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
         {t("formTitle")}
@@ -87,7 +131,7 @@ export function ReturnRequestForm() {
             required
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
-            placeholder="BL-…"
+            placeholder={t("formOrderPlaceholder")}
             className="bg-white"
           />
         </div>
@@ -99,6 +143,7 @@ export function ReturnRequestForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder={t("formEmailPlaceholder")}
             className="bg-white"
           />
         </div>
@@ -109,16 +154,24 @@ export function ReturnRequestForm() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            placeholder={t("formPhonePlaceholder")}
             className="bg-white"
           />
         </div>
         <div className="space-y-2 sm:col-span-2">
           <Label>{t("formReason")}</Label>
-          <Select value={reason} onValueChange={(v) => setReason(String(v ?? ""))}>
+          <Select
+            value={reason}
+            onValueChange={(v) => setReason(String(v ?? ""))}
+          >
             <SelectTrigger className="w-full bg-white">
-              <SelectValue />
+              <SelectValue>
+                {(v) =>
+                  t(`reason_${String(v ?? "quality_dislike")}` as "reason_defective")
+                }
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent alignItemWithTrigger={false} sideOffset={6}>
               {REASONS.map((r) => (
                 <SelectItem key={r} value={r}>
                   {t(`reason_${r}`)}
@@ -135,16 +188,38 @@ export function ReturnRequestForm() {
             rows={4}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            placeholder={t("formMessagePlaceholder")}
             className="bg-white"
           />
         </div>
         <label className="flex cursor-pointer items-start gap-3 sm:col-span-2">
-          <input
-            type="checkbox"
-            checked={refundWanted}
-            onChange={(e) => setRefundWanted(e.target.checked)}
-            className="mt-1 size-4 border-border"
-          />
+          <span className="relative mt-0.5 inline-flex size-5 shrink-0 items-center justify-center">
+            <input
+              type="checkbox"
+              checked={refundWanted}
+              onChange={(e) => setRefundWanted(e.target.checked)}
+              className="peer absolute inset-0 z-10 cursor-pointer opacity-0"
+            />
+            <span
+              className={cn(
+                "flex size-5 items-center justify-center border border-ink bg-white transition peer-focus-visible:ring-2 peer-focus-visible:ring-ink/30",
+                refundWanted && "bg-ink"
+              )}
+              aria-hidden
+            >
+              {refundWanted && (
+                <svg
+                  viewBox="0 0 12 12"
+                  className="size-3 text-mist"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M2 6.5 4.5 9 10 3" />
+                </svg>
+              )}
+            </span>
+          </span>
           <span className="text-sm leading-relaxed text-muted-foreground">
             {t("formRefundWanted")}
           </span>

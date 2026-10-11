@@ -13,6 +13,7 @@ const ALLOWED: ReturnRequestStatus[] = [
   "rejected",
   "awaiting_parcel",
   "received",
+  "sent_back",
   "refunded",
   "exchanged",
   "closed",

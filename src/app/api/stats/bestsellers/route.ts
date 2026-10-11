@@ -10,7 +10,7 @@ export async function GET(req: Request) {
 
     const items = await prisma.orderItem.findMany({
       where: {
-        order: { status: { not: "cancelled" } },
+        order: { status: { notIn: ["cancelled", "returned"] } },
       },
       select: { productId: true, qty: true },
     });

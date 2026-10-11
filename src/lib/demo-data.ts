@@ -387,6 +387,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   processing: "В обробці",
   shipped: "Відправлено",
   delivered: "Доставлено",
+  returned: "Повернення",
   cancelled: "Скасовано",
 };
 
@@ -403,6 +404,7 @@ export const ORDER_STATUS_STYLE: Record<
     dot: "bg-emerald-600",
     chip: "bg-emerald-600/10 text-emerald-800",
   },
+  returned: { dot: "bg-orange-500", chip: "bg-orange-500/10 text-orange-900" },
   cancelled: { dot: "bg-[#9b1c1c]", chip: "bg-[#9b1c1c]/10 text-[#9b1c1c]" },
 };
 

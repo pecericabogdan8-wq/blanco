@@ -26,7 +26,7 @@ import {
   paletteColorForKey,
 } from "@/lib/color-palette";
 import { CATEGORY_LABELS, ORDER_STATUS_LABELS } from "@/lib/demo-data";
-import { formatUAH, totalStock } from "@/lib/format";
+import { availableColorSizes, formatUAH, totalStock } from "@/lib/format";
 import type {
   Category,
   Order,
@@ -72,6 +72,7 @@ const FLOW: OrderStatus[] = [
   "processing",
   "shipped",
   "delivered",
+  "returned",
   "cancelled",
 ];
 
@@ -81,6 +82,7 @@ const ORDER_STATUS_CHIP: Record<OrderStatus, string> = {
   processing: "bg-amber-100 text-amber-800 ring-amber-200",
   shipped: "bg-violet-100 text-violet-800 ring-violet-200",
   delivered: "bg-emerald-100 text-emerald-800 ring-emerald-200",
+  returned: "bg-orange-100 text-orange-900 ring-orange-200",
   cancelled: "bg-[#9b1c1c]/10 text-[#9b1c1c] ring-[#9b1c1c]/20",
 };
 
@@ -545,6 +547,7 @@ export default function AdminPage() {
                               o.status === "processing" && "bg-amber-500",
                               o.status === "shipped" && "bg-violet-500",
                               o.status === "delivered" && "bg-emerald-500",
+                              o.status === "returned" && "bg-orange-500",
                               o.status === "cancelled" && "bg-[#9b1c1c]"
                             )}
                           />
@@ -612,15 +615,20 @@ export default function AdminPage() {
                       <Select
                         value={o.status}
                         onValueChange={async (v) => {
+                          const next = String(v ?? "");
                           const res = await fetch(`/api/orders/${o.id}`, {
                             method: "PATCH",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ status: v }),
+                            body: JSON.stringify({ status: next }),
                           });
                           const data = await res.json();
                           if (!data.ok) toast.error(data.error);
                           else {
-                            toast.success("Статус у базі оновлено");
+                            const msg =
+                              next === "cancelled" || next === "returned"
+                                ? "Статус оновлено · сток повернуто на склад"
+                                : "Статус у базі оновлено";
+                            toast.success(msg);
                             await reload();
                           }
                         }}
@@ -1363,6 +1371,7 @@ export default function AdminPage() {
               <ul className="space-y-2">
                 {products.map((p) => {
                   const stock = totalStock(p.inventory);
+                  const variants = availableColorSizes(p.colors, p.inventory);
                   return (
                     <li
                       key={p.id}
@@ -1387,9 +1396,36 @@ export default function AdminPage() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {formatUAH(p.salePrice ?? p.price)}
-                          {p.salePrice ? " · SALE" : ""} · {p.colors.length}{" "}
-                          кол. · {p.sizes.join("/") || "—"}
+                          {p.salePrice ? " · SALE" : ""}
                         </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                          {variants.length === 0 ? (
+                            <span className="text-[#9b1c1c]">
+                              немає в наявності
+                            </span>
+                          ) : (
+                            variants.map((v, i) => (
+                              <span
+                                key={v.id}
+                                className="inline-flex items-center gap-1.5"
+                              >
+                                {i > 0 ? (
+                                  <span className="text-border/80" aria-hidden>
+                                    ,
+                                  </span>
+                                ) : null}
+                                <span
+                                  className="size-2.5 shrink-0 rounded-full border border-black/20"
+                                  style={{ backgroundColor: v.hex }}
+                                  title={v.name}
+                                />
+                                <span className="tabular-nums text-foreground/80">
+                                  {v.sizes.join("/")}
+                                </span>
+                              </span>
+                            ))
+                          )}
+                        </div>
                         <div className="mt-2 flex flex-wrap gap-2">
                           <Button
                             size="sm"

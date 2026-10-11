@@ -29,6 +29,8 @@ enum OrderStatus {
   processing
   shipped
   delivered
+  /// Customer refused / didn't pick up — stock returned to warehouse
+  returned
   cancelled
 }
 
@@ -197,6 +199,8 @@ model Order {
   address       String
   novaPoshta    String?
   notes         String?
+  /// true after stock was put back (cancel / return) — prevents double restore
+  stockRestored Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

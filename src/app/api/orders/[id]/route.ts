@@ -2,9 +2,24 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser, requireAdmin } from "@/lib/auth";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api";
 import { mapOrder, orderItemInclude } from "@/lib/order-mapper";
+import {
+  isStockRestoringStatus,
+  reserveOrderStock,
+  restoreOrderStock,
+} from "@/lib/order-stock";
 import type { OrderStatus } from "@prisma/client";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+const ALLOWED: OrderStatus[] = [
+  "placed",
+  "paid",
+  "processing",
+  "shipped",
+  "delivered",
+  "returned",
+  "cancelled",
+];
 
 export async function GET(_req: Request, ctx: Ctx) {
   try {
@@ -48,22 +63,52 @@ export async function PATCH(req: Request, ctx: Ctx) {
     const { id } = await ctx.params;
     const body = await req.json();
     const status = body.status as OrderStatus;
-    const allowed = [
-      "placed",
-      "paid",
-      "processing",
-      "shipped",
-      "delivered",
-      "cancelled",
-    ];
-    if (!allowed.includes(status)) return jsonError("Invalid status");
+    if (!ALLOWED.includes(status)) return jsonError("Invalid status");
+
+    const existing = await prisma.order.findUnique({ where: { id } });
+    if (!existing) return jsonError("Замовлення не знайдено", 404);
+
+    const wasRestoring = isStockRestoringStatus(existing.status);
+    const willRestore = isStockRestoringStatus(status);
+
+    // Cancel / return → put stock back once
+    if (willRestore && !wasRestoring) {
+      await restoreOrderStock(id);
+    }
+    // Undo cancel/return → reserve again
+    if (!willRestore && wasRestoring) {
+      try {
+        await reserveOrderStock(id);
+      } catch (e) {
+        return jsonError(
+          e instanceof Error ? e.message : "Не вдалося знову зарезервувати склад",
+          409
+        );
+      }
+    }
 
     const order = await prisma.order.update({
       where: { id },
       data: { status },
-      include: { items: true },
+      include: {
+        items: { include: orderItemInclude },
+        payments: true,
+      },
     });
-    return jsonOk({ ok: true, order });
+
+    return jsonOk({
+      ok: true,
+      order: {
+        ...mapOrder(order),
+        payments: order.payments.map((p) => ({
+          id: p.id,
+          status: p.status,
+          provider: p.provider,
+          amount: p.amount,
+        })),
+        stockRestored: order.stockRestored,
+      },
+    });
   } catch (err) {
     return handleApiError(err);
   }

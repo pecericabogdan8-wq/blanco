@@ -222,6 +222,7 @@
     "processing": "В обробці",
     "shipped": "Відправлено",
     "delivered": "Доставлено",
+    "returned": "Повернення",
     "cancelled": "Скасовано"
   },
   "Footer": {

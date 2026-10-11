@@ -60,6 +60,7 @@ export type OrderStatus =
   | "processing"
   | "shipped"
   | "delivered"
+  | "returned"
   | "cancelled";
 
 export type PaymentMethod = "card" | "apple_pay" | "google_pay";

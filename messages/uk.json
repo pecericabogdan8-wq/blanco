@@ -22,11 +22,16 @@
   },
   "Home": {
     "tagline": "Памʼять на грудях. Вʼязано в Україні.",
+    "aboutTitle": "Про бренд",
+    "aboutBody": "Blanco — бутиковий бренд одягу про памʼять і єдність. Тиха історія, editorial-естетика та вʼязані светри з портретами тих, хто формував Україну.",
     "toCatalog": "До каталогу",
-    "popular": "Популярні товари",
-    "popularHint": "За кількістю продажів",
+    "selected": "Колекція",
+    "popular": "Колекція",
+    "popularHint": "Усі моделі з каталогу — бестселери, знижки й новинки попереду.",
+    "shopCategory": "Категорії",
     "prev": "Назад",
-    "next": "Далі"
+    "next": "Далі",
+    "editorialAlt": "Blanco lookbook"
   },
   "Catalog": {
     "title": "Каталог",
@@ -303,11 +308,9 @@
     "formPhone": "Телефон (необовʼязково)",
     "formPhonePlaceholder": "+380…",
     "formReason": "Причина",
-    "formReasonOther": "Вкажіть причину",
+    "formReasonOther": "Вкажіть свою причину",
     "formReasonOtherPlaceholder": "Коротко своїми словами…",
-    "formMessage": "Опишіть ситуацію",
-    "formMessagePlaceholder": "Розмір / дефект / що саме не підійшло…",
-    "formMessageTooShort": "Опишіть трохи детальніше (мін. 3 символи)",
+    "formReasonOtherTooShort": "Опишіть трохи детальніше (мін. 3 символи)",
     "formRefundWanted": "Хочу повернення коштів (зніміть галочку, якщо потрібен лише обмін)",
     "formSubmit": "Надіслати заявку",
     "formSubmitting": "Надсилаємо…",
@@ -321,9 +324,10 @@
     "after3": "Вкажіть у ТТН номер замовлення. Після отримання перевіримо стан речі.",
     "after4": "Гроші повернемо на картку або узгодимо обмін — протягом 5–7 робочих днів після прийому.",
     "afterSupport": "Питання по дорозі — напишіть у чат підтримки на сайті або в Instagram @blancoone.",
-    "reason_defective": "Брак / дефект",
-    "reason_quality_dislike": "Не підійшла якість / смак",
     "reason_wrong_size": "Не той розмір",
+    "reason_quality": "Не підійшла якість",
+    "reason_taste": "Не підійшов смак",
+    "reason_defective": "Брак / дефект",
     "reason_other": "Інше"
   },
   "Support": {

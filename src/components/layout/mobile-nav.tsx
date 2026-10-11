@@ -33,7 +33,8 @@ export function MobileNav({
         variant="ghost"
         size="icon"
         className={cn(
-          isHome && "text-white hover:bg-white/10 hover:text-white"
+          "nav-icon hover:bg-transparent",
+          !isHome && "text-foreground"
         )}
         aria-label={t("menu")}
         onClick={() => setOpen(true)}
@@ -70,7 +71,7 @@ export function MobileNav({
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
-              className="px-3 py-3.5 text-[13px] font-medium tracking-[0.08em] uppercase transition-colors hover:bg-white"
+              className="hover-brand px-3 py-3.5 text-[13px] font-medium tracking-[0.08em] uppercase hover:bg-[#f0ebe4]"
             >
               {item.label}
             </Link>

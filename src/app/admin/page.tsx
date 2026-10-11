@@ -31,7 +31,13 @@ import {
   paletteColorForKey,
 } from "@/lib/color-palette";
 import { CATEGORY_LABELS, ORDER_STATUS_LABELS } from "@/lib/demo-data";
-import { availableColorSizes, formatUAH, totalStock } from "@/lib/format";
+import {
+  availableColorSizes,
+  formatUAH,
+  SIZE_ORDER,
+  sortSizes,
+  totalStock,
+} from "@/lib/format";
 import { isBestseller, isProductNew } from "@/lib/product-badges";
 import type {
   Category,
@@ -189,10 +195,15 @@ function emptySizeChart(sizesCsv: string): SizeChartRow[] {
 }
 
 function parseSizesCsv(sizesCsv: string): string[] {
-  return sizesCsv
-    .split(",")
-    .map((s) => s.trim().toUpperCase())
-    .filter(Boolean);
+  const uniq = [
+    ...new Set(
+      sizesCsv
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean)
+    ),
+  ];
+  return sortSizes(uniq);
 }
 
 const emptyForm = () => ({
@@ -221,11 +232,22 @@ function linesToList(raw: string): string[] {
 }
 
 function productToForm(p: Product) {
-  const sizes = p.sizes.join(",");
+  const sizeList = sortSizes(p.sizes.map((s) => String(s).toUpperCase()));
+  const sizes = sizeList.join(",");
   const inventory: Record<string, string> = {};
   for (const [k, v] of Object.entries(p.inventory)) {
     inventory[k] = String(v);
   }
+  const chartBySize = new Map(
+    (p.sizeChart ?? []).map((r) => [
+      String(r.size).toUpperCase(),
+      {
+        size: r.size,
+        length: r.length ?? "",
+        width: r.width ?? r.chest ?? "",
+      },
+    ])
+  );
   return {
     name: p.nameUk || p.name,
     slug: p.slug,
@@ -245,13 +267,16 @@ function productToForm(p: Product) {
     inventory,
     images: [...p.images],
     tags: (p.tags ?? []).join(", "),
-    sizeChart: (p.sizeChart?.length
-      ? p.sizeChart.map((r) => ({
-          size: r.size,
-          length: r.length ?? "",
-          width: r.width ?? r.chest ?? "",
-        }))
-      : emptySizeChart(sizes)) as SizeChartRow[],
+    sizeChart: (sizeList.map((size) => {
+      const found = chartBySize.get(size);
+      return (
+        found ?? {
+          size: size as ProductSize,
+          length: "",
+          width: "",
+        }
+      );
+    })) as SizeChartRow[],
   };
 }
 
@@ -280,6 +305,7 @@ export default function AdminPage() {
     name: "",
     hex: "#8B6F5C",
   });
+  const [customSize, setCustomSize] = useState("");
 
   const reload = useCallback(async () => {
     const [p, tr, o, t, r, b] = await Promise.all([
@@ -1035,7 +1061,7 @@ export default function AdminPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-[#9b1c1c] hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
+                            className="btn-delete"
                             onClick={async () => {
                               const label = p.nameUk || p.name;
                               if (
@@ -1250,36 +1276,32 @@ export default function AdminPage() {
               <FormSection eyebrow="Варіанти" title="Кольори">
                 <div className="space-y-3">
                   <p className="text-[11px] text-muted-foreground">
-                    Обери з палітри — назва й колір кружка підставляються самі
-                    з key (black → «Чорний»). Свій колір — вкажи назву, key
-                    згенерується. Hex можна підкрутити вручну.
+                    Палітра + кольори з інших товарів у каталозі. Свій колір —
+                    назва нижче (без вікон браузера). Після збереження товару
+                    колір у базі; якщо більше ніде не використовується й товар
+                    видалено назавжди — зникає з пулу.
                   </p>
                   {form.colors.length === 0 && (
-                    <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-4 text-center text-xs text-muted-foreground">
-                      Кольорів ще немає — обери з палітри нижче або додай свій
+                    <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-3 text-center text-xs text-muted-foreground">
+                      Кольорів ще немає — обери з палітри або додай свій
                     </p>
                   )}
-                  <ul className="space-y-2">
-                    {form.colors.map((c, i) => {
-                      const preset = paletteColorForKey(c.key);
-                      return (
-                      <li
-                        key={`${c.key}-${i}`}
-                        className="grid gap-2 border border-border bg-[#faf9f7] p-2 sm:grid-cols-[auto_1fr_auto_auto] sm:items-end"
-                      >
-                        <span
-                          className="size-9 shrink-0 self-center rounded-full border border-black/20"
-                          style={{ backgroundColor: c.hex }}
-                          title={c.hex}
-                        />
-                        <div className="space-y-1">
-                          <Label className="text-[10px]">
-                            Назва для покупця
-                            {preset ? " (з палітри)" : ""}
-                          </Label>
+                  {form.colors.length > 0 && (
+                    <ul className="max-h-56 space-y-1 overflow-y-auto border border-border bg-[#faf9f7] p-1.5 sm:max-h-72">
+                      {form.colors.map((c, i) => (
+                        <li
+                          key={`${c.key}-${i}`}
+                          className="flex items-center gap-2 bg-white px-2 py-1.5"
+                        >
+                          <span
+                            className="size-7 shrink-0 rounded-full border border-black/20"
+                            style={{ backgroundColor: c.hex }}
+                            title={c.hex}
+                          />
                           <Input
                             value={c.name}
-                            placeholder="напр. Чорний"
+                            placeholder="Назва"
+                            aria-label="Назва кольору"
                             onChange={(e) => {
                               const name = e.target.value;
                               const fromName = colorKeyFromName(name);
@@ -1287,7 +1309,11 @@ export default function AdminPage() {
                               setForm((f) => {
                                 const colors = [...f.colors];
                                 colors[i] = hit
-                                  ? { key: hit.key, name: hit.name, hex: hit.hex }
+                                  ? {
+                                      key: hit.key,
+                                      name: hit.name,
+                                      hex: hit.hex,
+                                    }
                                   : {
                                       ...c,
                                       name,
@@ -1296,13 +1322,8 @@ export default function AdminPage() {
                                 return { ...f, colors };
                               });
                             }}
+                            className="h-8 min-w-0 flex-1"
                           />
-                          <p className="text-[10px] text-muted-foreground">
-                            id: <span className="font-mono">{c.key || "—"}</span>
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px]">hex</Label>
                           <Input
                             type="color"
                             value={
@@ -1318,22 +1339,23 @@ export default function AdminPage() {
                                 return { ...f, colors };
                               });
                             }}
-                            className="h-8 w-12 cursor-pointer p-0.5"
+                            className="h-8 w-10 shrink-0 cursor-pointer p-0.5"
+                            title={c.key}
                           />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-[#9b1c1c]"
-                          onClick={() => removeFormColor(c.key)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </li>
-                      );
-                    })}
-                  </ul>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="btn-delete size-8 shrink-0 p-0"
+                            aria-label={`Прибрати ${c.name}`}
+                            onClick={() => removeFormColor(c.key)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <div className="flex flex-wrap gap-1.5">
                     {existingColorsPool.map((c) => {
                       const active = form.colors.some((x) => x.key === c.key);
@@ -1345,10 +1367,10 @@ export default function AdminPage() {
                           disabled={active}
                           onClick={() => addFormColor(c)}
                           className={cn(
-                            "inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] transition",
+                            "inline-flex items-center gap-1.5 border px-2 py-1 text-[11px]",
                             active
                               ? "border-ink/30 bg-ink/5 opacity-50"
-                              : "border-border bg-white hover:border-ink/50"
+                              : "hover-brand border-border bg-white"
                           )}
                         >
                           <span
@@ -1392,6 +1414,7 @@ export default function AdminPage() {
                       type="button"
                       variant="outline"
                       size="sm"
+                      className="hover-brand"
                       onClick={() => {
                         const name = customColor.name.trim();
                         if (!name) {
@@ -1416,14 +1439,14 @@ export default function AdminPage() {
               <FormSection eyebrow="Склад" title="Розміри і склад">
                 <div className="space-y-3">
                 <div className="space-y-1">
-                  <Label>Розміри (через кому)</Label>
-                  <Input
-                    value={form.sizes}
-                    onChange={(e) => setForm(syncSizes(e.target.value))}
-                    placeholder="напр. S,M,L,XL"
-                  />
+                  <Label>Розміри</Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    У таблиці завжди від меншого до більшого (XXS→XXL→ONE),
+                    незалежно від порядку кліків. Свій розмір — поле нижче, без
+                    вікна браузера.
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {["XS", "S", "M", "L", "XL", "XXL", "ONE"].map((s) => {
+                    {SIZE_ORDER.map((s) => {
                       const have = parseSizesCsv(form.sizes).includes(s);
                       return (
                         <button
@@ -1440,7 +1463,7 @@ export default function AdminPage() {
                             "border px-2.5 py-1 text-xs",
                             have
                               ? "border-ink bg-ink text-mist"
-                              : "border-border bg-white"
+                              : "hover-brand border-border bg-white"
                           )}
                         >
                           {s}
@@ -1448,6 +1471,59 @@ export default function AdminPage() {
                       );
                     })}
                   </div>
+                  <div className="mt-2 flex flex-wrap items-end gap-2">
+                    <div className="min-w-[7rem] flex-1 space-y-1">
+                      <Label className="text-[10px]">Свій розмір</Label>
+                      <Input
+                        value={customSize}
+                        onChange={(e) => setCustomSize(e.target.value)}
+                        placeholder="напр. 3XL"
+                        className="h-8 uppercase"
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const s = customSize.trim().toUpperCase();
+                          if (!s) return;
+                          const cur = parseSizesCsv(form.sizes);
+                          if (!cur.includes(s)) cur.push(s);
+                          setForm(syncSizes(cur.join(",")));
+                          setCustomSize("");
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="hover-brand"
+                      onClick={() => {
+                        const s = customSize.trim().toUpperCase();
+                        if (!s) {
+                          toast.error("Вкажіть розмір");
+                          return;
+                        }
+                        const cur = parseSizesCsv(form.sizes);
+                        if (cur.includes(s)) {
+                          toast.message(`Розмір «${s}» уже додано`);
+                          return;
+                        }
+                        cur.push(s);
+                        setForm(syncSizes(cur.join(",")));
+                        setCustomSize("");
+                      }}
+                    >
+                      <Plus className="size-3.5" />
+                      Додати розмір
+                    </Button>
+                  </div>
+                  {parseSizesCsv(form.sizes).length > 0 && (
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      Обрано:{" "}
+                      <span className="font-medium text-foreground">
+                        {parseSizesCsv(form.sizes).join(" · ")}
+                      </span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1462,9 +1538,9 @@ export default function AdminPage() {
                     </p>
                   ) : (
                     <>
-                      <div className="overflow-x-auto border border-border bg-white">
+                      <div className="max-h-80 overflow-auto border border-border bg-white">
                         <table className="w-full min-w-[320px] text-sm">
-                          <thead>
+                          <thead className="sticky top-0 bg-white">
                             <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
                               <th className="px-2 py-2 sm:px-3">Колір</th>
                               {parseSizesCsv(form.sizes).map((s) => (
@@ -1588,49 +1664,28 @@ export default function AdminPage() {
 
               <FormSection eyebrow="Розміри" title="Розмірна сітка">
                 <div className="space-y-2">
-                  <div className="flex flex-wrap items-end justify-between gap-2">
-                    <div>
-                      <p className="text-[11px] text-muted-foreground">
-                        a = довжина · b = ширина по грудях. Порожні рядки не
-                        зберігаються. Рядки з’являються з розмірів вище.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const size = window.prompt(
-                          "Новий розмір для сітки (напр. XXL)",
-                          "XXL"
-                        );
-                        if (!size?.trim()) return;
-                        const s = size.trim().toUpperCase();
-                        const cur = parseSizesCsv(form.sizes);
-                        if (!cur.includes(s)) cur.push(s);
-                        setForm(syncSizes(cur.join(",")));
-                      }}
-                    >
-                      <Plus className="size-3.5" />
-                      Розмір у сітку
-                    </Button>
-                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    a = довжина · b = ширина по грудях. Порожні рядки не
+                    зберігаються. Рядки з’являються з розмірів вище (від
+                    меншого до більшого).
+                  </p>
                   {form.sizeChart.length === 0 ? (
                     <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-4 text-center text-xs text-muted-foreground">
                       Рядки зʼявляться після вибору розмірів
                     </p>
                   ) : (
-                    <div className="overflow-x-auto border border-border bg-white">
+                    <div className="max-h-72 overflow-auto border border-border bg-white">
                       <table className="w-full min-w-[280px] text-sm">
-                        <thead>
+                        <thead className="sticky top-0 bg-white">
                           <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
                             <th className="px-3 py-2">Size</th>
                             <th className="px-3 py-2">Довжина (a)</th>
                             <th className="px-3 py-2">Ширина (b)</th>
+                            <th className="w-10 px-1 py-2" />
                           </tr>
                         </thead>
                         <tbody>
-                          {form.sizeChart.map((row, i) => (
+                          {form.sizeChart.map((row) => (
                             <tr
                               key={row.size}
                               className="border-b border-border last:border-0"
@@ -1642,12 +1697,15 @@ export default function AdminPage() {
                                 <Input
                                   value={row.length}
                                   onChange={(e) => {
-                                    const sizeChart = [...form.sizeChart];
-                                    sizeChart[i] = {
-                                      ...row,
-                                      length: e.target.value,
-                                    };
-                                    setForm({ ...form, sizeChart });
+                                    const length = e.target.value;
+                                    setForm((f) => ({
+                                      ...f,
+                                      sizeChart: f.sizeChart.map((r) =>
+                                        r.size === row.size
+                                          ? { ...r, length }
+                                          : r
+                                      ),
+                                    }));
                                   }}
                                   className="h-8"
                                   placeholder="напр. 66"
@@ -1657,16 +1715,36 @@ export default function AdminPage() {
                                 <Input
                                   value={row.width}
                                   onChange={(e) => {
-                                    const sizeChart = [...form.sizeChart];
-                                    sizeChart[i] = {
-                                      ...row,
-                                      width: e.target.value,
-                                    };
-                                    setForm({ ...form, sizeChart });
+                                    const width = e.target.value;
+                                    setForm((f) => ({
+                                      ...f,
+                                      sizeChart: f.sizeChart.map((r) =>
+                                        r.size === row.size
+                                          ? { ...r, width }
+                                          : r
+                                      ),
+                                    }));
                                   }}
                                   className="h-8"
                                   placeholder="напр. 64"
                                 />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="btn-delete size-8 p-0"
+                                  aria-label={`Прибрати розмір ${row.size}`}
+                                  onClick={() => {
+                                    const next = parseSizesCsv(form.sizes).filter(
+                                      (s) => s !== String(row.size).toUpperCase()
+                                    );
+                                    setForm(syncSizes(next.join(",")));
+                                  }}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
                               </td>
                             </tr>
                           ))}
@@ -1757,8 +1835,8 @@ export default function AdminPage() {
                   size="sm"
                   onClick={() => setProductsView("trash")}
                   className={cn(
-                    "relative transition-colors hover:border-[#9b1c1c]/50 hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]",
-                    trash.length === 0 && "text-muted-foreground"
+                    "btn-delete relative",
+                    trash.length === 0 && "opacity-70"
                   )}
                 >
                   <Trash2 className="size-3.5" />
@@ -1888,7 +1966,7 @@ export default function AdminPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-muted-foreground hover:border-[#9b1c1c]/30 hover:bg-[#9b1c1c]/10 hover:text-[#9b1c1c]"
+                            className="btn-delete"
                             onClick={async () => {
                               const label = p.nameUk || p.name;
                               if (

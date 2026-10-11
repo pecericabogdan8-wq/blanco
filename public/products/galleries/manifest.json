@@ -183,15 +183,11 @@
   },
   "lobanovskyi": {
     "images": [
-      "/products/galleries/lobanovskyi/01.jpg",
-      "/products/galleries/lobanovskyi/02.jpg",
-      "/products/galleries/lobanovskyi/03.jpg"
+      "/products/galleries/lobanovskyi/01.jpg"
     ],
     "primary": "/products/galleries/lobanovskyi/01.jpg",
     "sources": [
-      "items/photo_2026-10-08_15-46-55.JPG",
-      "items/photo_2026-10-08_15-46-55.jpg",
-      "items/photo_2026-10-08_15-47-12.JPG"
+      "items/photo_2026-10-08_15-46-55.JPG"
     ]
   },
   "freedom-scarf": {

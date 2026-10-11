@@ -20,10 +20,11 @@ import { FIELD_MSG, isBlank, isValidEmail, type FieldErrors } from "@/lib/form-f
 import { useShopStore } from "@/store/shop-store";
 import { cn } from "@/lib/utils";
 
-/** Most common → rare; «Інше» last with free text. */
+/** Preset reasons; «Інше» unlocks free-text field. */
 const REASONS = [
   "wrong_size",
-  "quality_dislike",
+  "quality",
+  "taste",
   "defective",
   "other",
 ] as const;
@@ -39,7 +40,6 @@ export function ReturnRequestForm({ className }: { className?: string }) {
   const [phone, setPhone] = useState(() => user?.phone ?? "");
   const [reason, setReason] = useState<string>("wrong_size");
   const [reasonOther, setReasonOther] = useState("");
-  const [message, setMessage] = useState("");
   const [refundWanted, setRefundWanted] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -66,12 +66,11 @@ export function ReturnRequestForm({ className }: { className?: string }) {
     if (isBlank(email)) next.email = FIELD_MSG.required;
     else if (!isValidEmail(email)) next.email = FIELD_MSG.email;
     if (!reason) next.reason = FIELD_MSG.required;
-    if (reason === "other" && isBlank(reasonOther)) {
-      next.reasonOther = FIELD_MSG.required;
-    }
-    if (isBlank(message)) next.message = FIELD_MSG.required;
-    else if (message.trim().length < 3) {
-      next.message = t("formMessageTooShort");
+    if (reason === "other") {
+      if (isBlank(reasonOther)) next.reasonOther = FIELD_MSG.required;
+      else if (reasonOther.trim().length < 3) {
+        next.reasonOther = t("formReasonOtherTooShort");
+      }
     }
     return next;
   }
@@ -84,10 +83,10 @@ export function ReturnRequestForm({ className }: { className?: string }) {
 
     setSubmitting(true);
     try {
-      const detail =
+      const message =
         reason === "other"
-          ? `${reasonOther.trim()}${message.trim() ? `\n${message.trim()}` : ""}`
-          : message.trim();
+          ? reasonOther.trim()
+          : t(`reason_${reason}` as "reason_wrong_size");
       const res = await fetch("/api/returns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -96,7 +95,7 @@ export function ReturnRequestForm({ className }: { className?: string }) {
           email: email.trim(),
           phone: phone.trim() || undefined,
           reason,
-          message: detail,
+          message,
           refundWanted,
         }),
       });
@@ -107,7 +106,6 @@ export function ReturnRequestForm({ className }: { className?: string }) {
       }
       setDone(true);
       toast.success(t("formSuccess"));
-      setMessage("");
       setReasonOther("");
     } catch {
       toast.error(t("formError"));
@@ -218,7 +216,7 @@ export function ReturnRequestForm({ className }: { className?: string }) {
               <SelectValue>
                 {(v) =>
                   t(
-                    `reason_${String(v ?? "wrong_size")}` as "reason_defective"
+                    `reason_${String(v ?? "wrong_size")}` as "reason_wrong_size"
                   )
                 }
               </SelectValue>
@@ -236,8 +234,9 @@ export function ReturnRequestForm({ className }: { className?: string }) {
         {reason === "other" && (
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="return-reason-other">{t("formReasonOther")}</Label>
-            <Input
+            <Textarea
               id="return-reason-other"
+              rows={3}
               value={reasonOther}
               onChange={(e) => {
                 setReasonOther(e.target.value);
@@ -250,22 +249,6 @@ export function ReturnRequestForm({ className }: { className?: string }) {
             <FieldError message={errors.reasonOther} />
           </div>
         )}
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="return-message">{t("formMessage")}</Label>
-          <Textarea
-            id="return-message"
-            rows={4}
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value);
-              clearError("message");
-            }}
-            placeholder={t("formMessagePlaceholder")}
-            aria-invalid={Boolean(errors.message)}
-            className="bg-white"
-          />
-          <FieldError message={errors.message} />
-        </div>
         <label className="flex cursor-pointer items-start gap-3 sm:col-span-2">
           <span className="relative mt-0.5 inline-flex size-5 shrink-0 items-center justify-center">
             <input

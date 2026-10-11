@@ -1,17 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ProductCard } from "@/components/shop/product-card";
-import { formatUAH } from "@/lib/format";
-import { localizedProductName } from "@/lib/localize-product";
+import { HomeProductRail } from "@/components/shop/home-product-rail";
+import { sortHomeRailProducts } from "@/lib/home-rail-sort";
 import type { Product } from "@/lib/types";
 import { Link } from "@/i18n/navigation";
 import { useShopStore } from "@/store/shop-store";
+import { cn } from "@/lib/utils";
 
-type Bestseller = Product & { soldQty?: number };
 type Mention = {
   id: string;
   handle: string;
@@ -19,36 +17,63 @@ type Mention = {
   image: string;
 };
 
+const LOOK = {
+  hero: "/products/galleries/lookbook/08.jpg",
+  bottom: "/products/galleries/lookbook/home-bottom.jpg",
+  sweaters: "/products/galleries/lookbook/home-sweaters.jpg",
+  tshirts: "/products/galleries/lookbook/home-tshirts.jpg",
+  scarves: "/products/galleries/lookbook/home-scarves.jpg",
+} as const;
+
 export default function HomePage() {
   const t = useTranslations("Home");
   const tCat = useTranslations("Categories");
   const tNav = useTranslations("Nav");
   const products = useShopStore((s) => s.products);
-  const [bestsellers, setBestsellers] = useState<Bestseller[]>([]);
+  const setProducts = useShopStore((s) => s.setProducts);
   const [salesTopIds, setSalesTopIds] = useState<string[]>([]);
+  const [soldById, setSoldById] = useState<Record<string, number>>({});
   const [mentions, setMentions] = useState<Mention[]>([]);
-  const [bestIdx, setBestIdx] = useState(0);
-  const kuzma = products.find((p) => p.id === "p-kuzma");
-  const scarf = products.find((p) => p.id === "p-volya-scarf");
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
+
+  const catalog = products.length > 0 ? products : localProducts;
+
+  const railProducts = useMemo(
+    () => sortHomeRailProducts(catalog, salesTopIds, soldById),
+    [catalog, salesTopIds, soldById]
+  );
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const [bestRes, igRes] = await Promise.all([
-          fetch("/api/stats/bestsellers?limit=8"),
+        const [bestRes, igRes, prodRes] = await Promise.all([
+          fetch("/api/stats/bestsellers?limit=24"),
           fetch("/api/instagram"),
+          fetch("/api/products"),
         ]);
         const data = await bestRes.json();
         const ig = await igRes.json();
+        const pd = await prodRes.json();
         if (!cancelled && data.ok) {
-          setBestsellers(data.products ?? []);
-          setSalesTopIds(
-            Array.isArray(data.salesTopIds) ? data.salesTopIds : []
-          );
+          const ids = Array.isArray(data.salesTopIds)
+            ? (data.salesTopIds as string[])
+            : [];
+          setSalesTopIds(ids);
+          const sold: Record<string, number> = {};
+          if (Array.isArray(data.products)) {
+            for (const p of data.products as (Product & { soldQty?: number })[]) {
+              if (p?.id) sold[p.id] = Number(p.soldQty) || 0;
+            }
+          }
+          setSoldById(sold);
         }
         if (!cancelled && ig.ok && Array.isArray(ig.mentions)) {
           setMentions(ig.mentions);
+        }
+        if (!cancelled && pd.ok && Array.isArray(pd.products)) {
+          setLocalProducts(pd.products);
+          setProducts(pd.products);
         }
       } catch {
         /* ignore */
@@ -57,213 +82,116 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setProducts]);
 
   const categories = [
     {
       href: "/catalog?category=sweaters" as const,
       key: "sweaters" as const,
-      img: "/products/galleries/lesya/01.jpg",
+      img: LOOK.sweaters,
+      position: "object-[center_20%]",
     },
     {
       href: "/catalog?category=tshirts" as const,
       key: "tshirts" as const,
-      img: "/products/galleries/kuzma-tee/01.jpg",
+      img: LOOK.tshirts,
+      position: "object-[center_22%]",
     },
     {
       href: "/catalog?category=scarves" as const,
       key: "scarves" as const,
-      img: "/products/galleries/freedom-scarf/01.jpg",
+      img: LOOK.scarves,
+      position: "object-[center_18%]",
     },
   ];
 
   return (
-    <div>
-      <section className="relative isolate min-h-[100svh] overflow-hidden bg-ink">
-        <Image
-          src="/products/hero-main.webp"
-          alt="blanco lookbook"
-          fill
-          priority
-          quality={95}
-          className="object-cover object-[12%_18%] max-sm:object-[38%_24%]"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-transparent" />
-        <div className="absolute inset-y-0 left-0 w-full max-w-md bg-gradient-to-r from-black/70 via-black/40 to-transparent sm:max-w-[45%] sm:from-black/60 sm:via-black/25" />
-        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/55 to-transparent sm:hidden" />
-
-        {/* BlancoPortfolio hero: centered script mark + bottom CTA */}
-        <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl flex-col items-center justify-center px-4 pt-20 pb-16 sm:px-8 lg:px-12">
-          <div className="reveal text-center">
-            <p className="font-script text-[clamp(3.25rem,12vw,6.5rem)] leading-[0.9] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)]">
-              Blanco
-            </p>
-            <p className="mx-auto mt-4 max-w-sm text-[13px] leading-relaxed text-white/88 sm:mt-5 sm:text-[15px]">
-              {t("tagline")}
-            </p>
-            <Link
-              href="/catalog"
-              className="mt-7 inline-flex min-h-11 items-center justify-center border border-white/45 bg-black/35 px-8 text-[11px] tracking-[0.16em] text-white uppercase backdrop-blur-sm transition hover:border-white/65 hover:bg-black/50 sm:mt-8 sm:text-xs"
-            >
-              {t("toCatalog")}
-            </Link>
+    <div className="bg-[#f6f5f2]">
+      <section className="relative isolate w-full overflow-hidden bg-[#1a1410]">
+        {/* Fixed aspect like PDP stage — predictable crop across breakpoints */}
+        <div className="relative mx-auto aspect-[3/4] w-full sm:aspect-[4/3] lg:aspect-[16/9]">
+          <Image
+            src={LOOK.hero}
+            alt={t("editorialAlt")}
+            fill
+            priority
+            quality={95}
+            className="object-cover object-[center_22%]"
+            sizes="100vw"
+            unoptimized
+          />
+          <div className="absolute inset-0 flex items-center justify-center px-4 pt-14 pb-10 sm:px-6">
+            <div className="reveal max-w-md text-center">
+              <p className="font-script text-[clamp(3.25rem,12vw,6rem)] leading-[0.9] text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.55),0_2px_28px_rgba(0,0,0,0.35)]">
+                Blanco
+              </p>
+              <p className="mx-auto mt-4 max-w-sm text-[13px] leading-relaxed text-white/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.6),0_2px_16px_rgba(0,0,0,0.35)] sm:mt-5 sm:text-[15px]">
+                {t("tagline")}
+              </p>
+              <Link
+                href="/catalog"
+                className="mt-7 inline-flex min-h-11 items-center justify-center border border-white/80 bg-transparent px-9 text-[11px] tracking-[0.18em] text-white uppercase shadow-[0_2px_20px_rgba(0,0,0,0.25)] transition duration-200 hover:border-white hover:bg-white/10 sm:text-xs"
+              >
+                {t("toCatalog")}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 border-b border-border min-[480px]:grid-cols-3">
+      <section className="border-b border-border bg-white px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-[11px] tracking-[0.22em] text-muted-foreground uppercase">
+            {t("aboutTitle")}
+          </p>
+          <p className="mt-5 text-pretty text-[15px] leading-relaxed text-foreground/85 sm:text-lg sm:leading-relaxed">
+            {t("aboutBody")}
+          </p>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 border-b border-border min-[520px]:grid-cols-3">
         {categories.map((c) => (
           <Link
             key={c.href}
             href={c.href}
-            className="group relative aspect-[16/9] overflow-hidden bg-ink min-[480px]:aspect-[4/5] sm:aspect-[16/10]"
+            className="group relative aspect-[3/4] overflow-hidden bg-[#1a1410]"
           >
             <Image
               src={c.img}
               alt={tCat(c.key)}
               fill
-              quality={90}
-              className="object-cover transition duration-500 group-hover:scale-[1.03]"
-              sizes="(max-width:479px) 100vw, 33vw"
+              quality={95}
+              className={cn(
+                "home-lookbook object-cover transition duration-700 ease-out group-hover:scale-[1.03]",
+                c.position
+              )}
+              sizes="(max-width:519px) 100vw, 33vw"
+              unoptimized
             />
-            <div className="absolute inset-0 bg-black/35" />
-            <span className="absolute inset-x-0 bottom-4 text-center text-xs font-semibold tracking-[0.16em] text-white uppercase sm:text-sm sm:tracking-[0.2em]">
+            <span className="absolute inset-x-0 bottom-5 text-center text-[11px] font-semibold tracking-[0.2em] text-white uppercase [text-shadow:0_1px_10px_rgba(0,0,0,0.65)] sm:text-xs">
               {tCat(c.key)}
             </span>
           </Link>
         ))}
       </section>
 
-      {bestsellers.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="mb-8 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight uppercase sm:text-2xl">
-                {t("popular")}
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t("popularHint")}
-              </p>
-            </div>
-            {bestsellers.length > 4 && (
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  aria-label={t("prev")}
-                  className="border border-border p-2 hover:bg-white"
-                  onClick={() => setBestIdx((i) => Math.max(0, i - 1))}
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={t("next")}
-                  className="border border-border p-2 hover:bg-white"
-                  onClick={() =>
-                    setBestIdx((i) =>
-                      Math.min(Math.max(0, bestsellers.length - 2), i + 1)
-                    )
-                  }
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-6">
-            {bestsellers.slice(bestIdx, bestIdx + 4).map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                bestsellerIds={salesTopIds}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="grid lg:grid-cols-2">
-        <div className="relative min-h-[70vh] bg-ink">
-          <Image
-            src="/products/hero-alt.webp"
-            alt="blanco editorial"
-            fill
-            quality={95}
-            className="object-cover"
-            sizes="50vw"
-          />
-        </div>
-        <div className="flex flex-col justify-center gap-10 bg-white px-6 py-14 sm:px-12 lg:px-16">
-          {[kuzma, scarf].filter(Boolean).map((p) => (
-            <Link
-              key={p!.id}
-              href={`/product/${p!.slug}`}
-              className="group block max-w-sm"
-            >
-              <div className="relative aspect-[4/5] overflow-hidden bg-[#f0eee9]">
-                <Image
-                  src={p!.images[0]}
-                  alt={localizedProductName(p!)}
-                  fill
-                  quality={95}
-                  className="object-cover transition duration-500 group-hover:scale-[1.02]"
-                  sizes="(max-width:1024px) 100vw, 28vw"
-                />
-              </div>
-              <p className="mt-4 text-sm font-semibold tracking-wide uppercase">
-                {localizedProductName(p!)}
-              </p>
-              <p className="mt-1 flex flex-wrap items-baseline gap-2 text-sm font-semibold">
-                <span
-                  className={
-                    p!.salePrice != null && p!.salePrice < p!.price
-                      ? "text-[#c41e3a]"
-                      : "text-foreground"
-                  }
-                >
-                  {formatUAH(p!.salePrice ?? p!.price)}
-                </span>
-                {p!.salePrice != null && p!.salePrice < p!.price && (
-                  <span className="font-normal text-muted-foreground line-through">
-                    {formatUAH(p!.price)}
-                  </span>
-                )}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative min-h-[55vh] overflow-hidden bg-ink">
-        <Image
-          src="/products/hero-field.webp"
-          alt="blanco field lookbook"
-          fill
-          quality={95}
-          className="object-cover"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-black/25" />
-        <div className="relative z-10 flex min-h-[55vh] items-end px-6 pb-10 sm:px-10">
-          <div>
-            <p className="font-script text-5xl text-white sm:text-6xl">
-              Blanco
-            </p>
-            <p className="mt-2 max-w-sm text-sm text-white/75">{t("tagline")}</p>
-          </div>
-        </div>
-      </section>
+      <HomeProductRail
+        title={t("selected")}
+        hint={t("popularHint")}
+        products={railProducts}
+        bestsellerIds={salesTopIds}
+      />
 
       {mentions.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mb-8 flex items-end justify-between">
-            <h2 className="text-xl font-bold tracking-tight uppercase sm:text-2xl">
+        <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mb-8 flex items-end justify-between gap-4">
+            <h2 className="text-[13px] font-semibold tracking-[0.18em] uppercase sm:text-sm">
               Instagram
             </h2>
             <Link
               href="/reviews"
-              className="text-xs tracking-[0.18em] uppercase underline-offset-4 hover:underline"
+              className="hover-brand-text text-[11px] tracking-[0.16em] uppercase underline-offset-4 hover:underline"
             >
               {tNav("reviews")}
             </Link>
@@ -282,10 +210,10 @@ export default function HomePage() {
                   alt={m.handle}
                   fill
                   quality={90}
-                  className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                  className="object-cover object-center transition duration-500 group-hover:scale-[1.03]"
                   sizes="25vw"
                 />
-                <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/45" />
+                <div className="absolute inset-0 bg-black/0 transition group-hover:bg-[#5c4033]/45" />
                 <div className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 transition group-hover:opacity-100">
                   <p className="text-xs font-medium text-white">{m.handle}</p>
                   <p className="text-[11px] text-white/75">{m.caption}</p>
@@ -295,6 +223,21 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Bottom lookbook */}
+      <section className="relative isolate overflow-hidden bg-[#1a1410]">
+        <div className="relative aspect-[3/4] w-full sm:aspect-[4/3] lg:aspect-[21/9]">
+          <Image
+            src={LOOK.bottom}
+            alt={t("editorialAlt")}
+            fill
+            quality={95}
+            className="home-lookbook object-cover object-[center_28%]"
+            sizes="100vw"
+            unoptimized
+          />
+        </div>
+      </section>
     </div>
   );
 }

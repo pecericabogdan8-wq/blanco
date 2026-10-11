@@ -18,7 +18,7 @@ import {
   productMatchesQuery,
 } from "@/lib/localize-product";
 import { isProductNew } from "@/lib/product-badges";
-import { totalStock } from "@/lib/format";
+import { sortSizes, totalStock } from "@/lib/format";
 import type { Category, Product, ProductSize } from "@/lib/types";
 import { useShopStore } from "@/store/shop-store";
 import { useRouter } from "@/i18n/navigation";
@@ -94,16 +94,29 @@ function CatalogInner() {
     router.push(qs ? `/catalog?${qs}` : "/catalog");
   }
 
-  const allColors = useMemo(() => {
-    const map = new Map<string, (typeof products)[0]["colors"][0]>();
-    products.forEach((p) => p.colors.forEach((c) => map.set(c.id, c)));
-    return [...map.values()];
-  }, [products]);
-
-  const filtered = useMemo(() => {
+  /** Facet pool: same scope as list before size/color filters (category + search + stock). */
+  const facetProducts = useMemo(() => {
     let list = [...products];
     if (category !== "all") list = list.filter((p) => p.category === category);
     if (q) list = list.filter((p) => productMatchesQuery(p, q));
+    if (inStock) list = list.filter((p) => totalStock(p.inventory) > 0);
+    return list;
+  }, [products, category, q, inStock]);
+
+  const allColors = useMemo(() => {
+    const map = new Map<string, (typeof products)[0]["colors"][0]>();
+    facetProducts.forEach((p) => p.colors.forEach((c) => map.set(c.id, c)));
+    return [...map.values()];
+  }, [facetProducts]);
+
+  const allSizes = useMemo(() => {
+    const set = new Set<string>();
+    facetProducts.forEach((p) => p.sizes.forEach((s) => set.add(String(s))));
+    return sortSizes([...set]) as ProductSize[];
+  }, [facetProducts]);
+
+  const filtered = useMemo(() => {
+    let list = [...facetProducts];
     if (size) {
       list = list.filter(
         (p) =>
@@ -115,9 +128,6 @@ function CatalogInner() {
     }
     if (color) {
       list = list.filter((p) => p.colors.some((c) => c.id === color));
-    }
-    if (inStock) {
-      list = list.filter((p) => totalStock(p.inventory) > 0);
     }
     if (sort === "price-asc") {
       list.sort(
@@ -145,7 +155,7 @@ function CatalogInner() {
       });
     }
     return list;
-  }, [products, category, q, size, color, inStock, sort, bestsellerIds]);
+  }, [facetProducts, size, color, inStock, sort, bestsellerIds]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -223,21 +233,25 @@ function CatalogInner() {
               {t("size")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {(["S", "M", "L", "XL", "ONE"] as ProductSize[]).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setParam("size", size === s ? null : s)}
-                  className={cn(
-                    "pressable min-w-10 border px-2.5 py-1.5 text-sm transition-colors",
-                    size === s
-                      ? "border-ink bg-ink text-mist"
-                      : "border-border bg-white hover:border-ink/40"
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
+              {allSizes.length === 0 ? (
+                <p className="text-xs text-muted-foreground">—</p>
+              ) : (
+                allSizes.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setParam("size", size === s ? null : s)}
+                    className={cn(
+                      "pressable min-w-10 border px-2.5 py-1.5 text-sm transition-colors",
+                      size === s
+                        ? "border-ink bg-ink text-mist"
+                        : "border-border bg-white hover:border-ink/40"
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
@@ -301,7 +315,7 @@ function CatalogInner() {
                 const qs = next.toString();
                 router.push(qs ? `/catalog?${qs}` : "/catalog");
               }}
-              className="cursor-pointer text-[12px] tracking-wide text-muted-foreground underline-offset-4 transition-colors hover:text-[#d22a2b] hover:underline"
+              className="hover-brand-text cursor-pointer text-[12px] tracking-wide text-muted-foreground underline-offset-4 hover:underline"
             >
               {t("resetFilters")}
             </button>
@@ -322,8 +336,8 @@ function CatalogInner() {
                 value={sort}
                 onValueChange={(v) => setParam("sort", v ?? "popular")}
               >
-                <SelectTrigger className="h-9 w-fit justify-start gap-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 *:data-[slot=select-value]:flex-none">
-                  <SelectValue className="flex-none">
+                <SelectTrigger className="h-9 w-auto min-w-0 justify-start gap-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 [&_[data-slot=select-value]]:!flex-none [&_[data-slot=select-value]]:!grow-0 [&_[data-slot=select-value]]:!basis-auto">
+                  <SelectValue className="!flex-none !grow-0">
                     {sort === "new"
                       ? t("sortNew")
                       : sort === "price-asc"

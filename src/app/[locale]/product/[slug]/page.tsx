@@ -470,7 +470,7 @@ export default function ProductPage({
 
             <Link
               href="/returns#zayavka"
-              className="inline-flex text-sm font-medium text-foreground underline underline-offset-4 hover:opacity-70"
+              className="hover-brand-text inline-flex text-sm font-medium text-foreground underline underline-offset-4"
             >
               {t("returnCta")}
             </Link>

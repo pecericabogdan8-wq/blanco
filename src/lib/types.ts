@@ -8,7 +8,15 @@ export type ProductColor = {
   hex: string;
 };
 
-export type ProductSize = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "ONE";
+export type ProductSize =
+  | "XXS"
+  | "XS"
+  | "S"
+  | "M"
+  | "L"
+  | "XL"
+  | "XXL"
+  | "ONE";
 
 export type InventoryKey = string;
 

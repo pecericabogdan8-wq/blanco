@@ -11,7 +11,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # Bake local SQLite for demo share; swap to Postgres in real prod.
 ENV DATABASE_URL="file:./prisma/dev.db"
-RUN npx prisma generate && npm run build
+RUN npx prisma generate \
+  && npx prisma db push --skip-generate \
+  && npm run db:seed \
+  && npm run build
 
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app

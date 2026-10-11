@@ -125,7 +125,7 @@ function CartInner() {
                     </div>
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-destructive"
+                      className="btn-delete"
                       aria-label={t("remove")}
                       onClick={() =>
                         removeFromCart(

@@ -98,10 +98,7 @@ function HeaderSearch({ isHome }: { isHome: boolean }) {
         type="button"
         variant="ghost"
         size="icon"
-        className={cn(
-          "shrink-0",
-          isHome && "text-white hover:bg-white/10 hover:text-white"
-        )}
+        className="nav-icon shrink-0 hover:bg-transparent aria-expanded:bg-transparent"
         aria-label={t("openSearch")}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
@@ -168,10 +165,10 @@ function HeaderSearch({ isHome }: { isHome: boolean }) {
                       setDebouncedQ("");
                     }}
                     className={cn(
-                      "absolute top-1/2 right-2.5 z-10 flex size-8 -translate-y-1/2 items-center justify-center transition-colors",
+                      "absolute top-1/2 right-2.5 z-10 flex size-8 -translate-y-1/2 items-center justify-center",
                       isHome
-                        ? "text-white/80 hover:text-[#ff6b6b]"
-                        : "text-foreground hover:text-[#c41e3a]"
+                        ? "text-white/80 hover-brand-text-on-dark"
+                        : "text-foreground hover-brand-text"
                     )}
                   >
                     <X className="size-4 stroke-[2.5]" />
@@ -288,17 +285,24 @@ export function SiteHeader() {
       className={cn(
         "relative z-50 w-full transition-colors duration-200",
         isHome
-          ? "border-transparent bg-gradient-to-b from-black/70 via-black/35 to-transparent text-white"
+          ? "nav-on-dark border-transparent bg-transparent text-white"
           : "border-b border-border/80 bg-[#f6f5f2]/95 text-foreground backdrop-blur-md"
       )}
     >
+      {isHome ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/18 to-transparent"
+        />
+      ) : null}
       {/*
         Mobile/tablet: burger | mark | search+icons
         Desktop (lg+): nav links | mark | search+icons
         Never show both burger and desktop links at once.
       */}
-      <div className="relative mx-auto flex h-14 max-w-7xl items-center px-3 sm:h-16 sm:px-6">
-        <div className="relative z-10 flex w-[4.5rem] shrink-0 items-center justify-start sm:w-auto sm:min-w-[4.5rem]">
+      {/* Equal L/R inset: 1fr | logo | 1fr — same px as page/footer */}
+      <div className="relative mx-auto grid h-14 w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 sm:h-16 sm:px-6">
+        <div className="flex min-w-0 items-center justify-start">
           <div className="lg:hidden">
             <MobileNav items={mainNav} isHome={isHome} />
           </div>
@@ -307,11 +311,7 @@ export function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "whitespace-nowrap text-[12px] font-medium tracking-[0.06em] uppercase xl:text-[13px]",
-                  "cursor-pointer transition-colors duration-200 hover:text-[#d22a2b]",
-                  isHome ? "text-white/90" : "text-foreground"
-                )}
+                className="nav-link cursor-pointer whitespace-nowrap text-[12px] font-medium tracking-[0.06em] uppercase xl:text-[13px]"
               >
                 {item.label}
               </Link>
@@ -321,23 +321,20 @@ export function SiteHeader() {
 
         <Link
           href="/"
-          className="absolute top-1/2 left-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
+          className="justify-self-center"
           aria-label={t("home")}
         >
           <BlancoLogo invert={isHome} markClassName="!size-7 sm:!size-8" />
         </Link>
 
-        <div className="relative z-10 ml-auto flex shrink-0 items-center justify-end gap-0">
+        <div className="flex min-w-0 items-center justify-end gap-0">
           <Suspense fallback={<div className="size-9 shrink-0" />}>
             <HeaderSearch isHome={isHome} />
           </Suspense>
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              "relative shrink-0",
-              isHome && "text-white hover:bg-white/10 hover:text-white"
-            )}
+            className="nav-icon relative shrink-0 hover:bg-transparent"
             render={<Link href="/wishlist" aria-label={t("wishlist")} />}
           >
             <Heart className="size-5" />
@@ -348,10 +345,7 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              "relative shrink-0",
-              isHome && "text-white hover:bg-white/10 hover:text-white"
-            )}
+            className="nav-icon relative shrink-0 hover:bg-transparent"
             render={<Link href="/cart" aria-label={t("cart")} />}
           >
             <ShoppingBag className="size-5" />
@@ -362,10 +356,7 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              "hidden shrink-0 min-[400px]:inline-flex",
-              isHome && "text-white hover:bg-white/10 hover:text-white"
-            )}
+            className="nav-icon hidden shrink-0 min-[400px]:inline-flex hover:bg-transparent"
             render={
               <Link
                 href={user ? "/account" : "/auth/login"}

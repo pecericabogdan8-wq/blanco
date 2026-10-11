@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { sortSizes } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
 export function SizeGuideDialog({
@@ -19,6 +20,14 @@ export function SizeGuideDialog({
   triggerClassName?: string;
 }) {
   const t = useTranslations("Product");
+  const rank = new Map(
+    sortSizes(sizeChart.map((r) => String(r.size))).map((s, i) => [s, i])
+  );
+  const rows = [...sizeChart].sort(
+    (a, b) =>
+      (rank.get(String(a.size).toUpperCase()) ?? 99) -
+      (rank.get(String(b.size).toUpperCase()) ?? 99)
+  );
 
   return (
     <Dialog>
@@ -35,7 +44,7 @@ export function SizeGuideDialog({
         showCloseButton
       >
         <DialogHeader>
-          <DialogTitle className="text-lg tracking-wide uppercase">
+          <DialogTitle className="font-display text-2xl leading-none sm:text-3xl">
             {t("sizeGuide")}
           </DialogTitle>
           <DialogDescription>{t("sizeHint")}</DialogDescription>
@@ -50,7 +59,7 @@ export function SizeGuideDialog({
               </tr>
             </thead>
             <tbody>
-              {sizeChart.map((row) => (
+              {rows.map((row) => (
                 <tr key={row.size} className="border-b border-border/60 last:border-0">
                   <td className="px-3 py-2.5 font-medium">{row.size}</td>
                   <td className="px-3 py-2.5 tabular-nums">{row.length}</td>

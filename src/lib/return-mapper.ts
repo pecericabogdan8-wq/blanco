@@ -57,7 +57,8 @@ export function mapReturnRequest(r: ReturnRow) {
 
 export const RETURN_REASON_LABELS: Record<ReturnReason, string> = {
   wrong_size: "Не той розмір",
-  quality_dislike: "Не підійшла якість / смак",
+  quality: "Не підійшла якість",
+  taste: "Не підійшов смак",
   defective: "Брак / дефект",
   other: "Інше",
 };

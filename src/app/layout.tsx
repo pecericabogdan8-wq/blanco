@@ -9,10 +9,10 @@ const dmSans = DM_Sans({
 
 /**
  * Brand + page titles — Great Vibes (portfolio logo script).
- * Cyrillic glyphs added in the 2024 Google Fonts release.
+ * Separate CSS var so Tailwind @theme --font-display does not clobber it.
  */
 const greatVibes = Great_Vibes({
-  variable: "--font-display",
+  variable: "--font-great-vibes",
   subsets: ["latin", "latin-ext", "cyrillic", "cyrillic-ext"],
   weight: "400",
   display: "swap",

@@ -24,13 +24,28 @@ export function totalStock(inventory: Record<string, number>) {
   return Object.values(inventory).reduce((a, b) => a + b, 0);
 }
 
-const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL", "ONE"] as const;
+export const SIZE_ORDER = [
+  "XXS",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "XXL",
+  "ONE",
+] as const;
 
-function sortSizes(sizes: string[]) {
+/** XXS → … → XXL → ONE; unknown custom sizes after known, then alpha. */
+export function sortSizes(sizes: string[]) {
   return [...sizes].sort((a, b) => {
-    const ia = SIZE_ORDER.indexOf(a as (typeof SIZE_ORDER)[number]);
-    const ib = SIZE_ORDER.indexOf(b as (typeof SIZE_ORDER)[number]);
-    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    const ua = a.toUpperCase();
+    const ub = b.toUpperCase();
+    const ia = SIZE_ORDER.indexOf(ua as (typeof SIZE_ORDER)[number]);
+    const ib = SIZE_ORDER.indexOf(ub as (typeof SIZE_ORDER)[number]);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return ua.localeCompare(ub, "en");
   });
 }
 

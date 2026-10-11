@@ -22,10 +22,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-display: var(--font-display);
-  --font-script: var(--font-display);
+  --font-display: var(--font-great-vibes), cursive;
+  --font-script: var(--font-great-vibes), cursive;
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-display);
+  --font-heading: var(--font-great-vibes), cursive;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -148,13 +148,17 @@
 
 @layer utilities {
   .font-display {
-    font-family: var(--font-display), cursive;
+    font-family: var(--font-great-vibes), cursive;
     font-weight: 400;
     font-style: normal;
     letter-spacing: 0.01em;
   }
   .font-script {
-    font-family: var(--font-display), cursive;
+    font-family: var(--font-great-vibes), cursive;
+    font-weight: 400;
+  }
+  .font-heading {
+    font-family: var(--font-great-vibes), cursive;
     font-weight: 400;
   }
   .text-balance {
@@ -171,6 +175,74 @@
   }
   .reveal-delay-3 {
     animation-delay: 0.2s;
+  }
+  /*
+   * Light warm fade toward hero — keep depth, don’t crush blacks.
+   * Hero stays untouched (no class).
+   */
+  .home-lookbook {
+    filter: contrast(0.96) brightness(1.02) saturate(0.93) sepia(0.05);
+  }
+
+  /* Site-wide header hover: underline links + icon lift (no grey squares) */
+  .nav-link {
+    position: relative;
+    transition: color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: translateX(-50%) scaleX(0);
+    transform-origin: center;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity: 0.85;
+  }
+  .nav-link:hover::after {
+    transform: translateX(-50%) scaleX(1);
+  }
+  .nav-icon {
+    background: transparent !important;
+    transition:
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.28s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+  .nav-icon:hover,
+  .nav-icon:focus-visible,
+  .nav-icon[aria-expanded="true"] {
+    background: transparent !important;
+    transform: translateY(-1px) scale(1.08);
+  }
+  .nav-icon:active {
+    transform: translateY(0) scale(0.96);
+  }
+  /* Light pages */
+  header:not(.nav-on-dark) .nav-link:hover {
+    color: #8b6f5c;
+  }
+  header:not(.nav-on-dark) .nav-icon:hover,
+  header:not(.nav-on-dark) .nav-icon:focus-visible,
+  header:not(.nav-on-dark) .nav-icon[aria-expanded="true"] {
+    color: #8b6f5c !important;
+  }
+  /* Home (over photo) */
+  header.nav-on-dark .nav-link {
+    color: rgba(255, 255, 255, 0.88);
+  }
+  header.nav-on-dark .nav-link:hover {
+    color: #fff;
+  }
+  header.nav-on-dark .nav-icon {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  header.nav-on-dark .nav-icon:hover,
+  header.nav-on-dark .nav-icon:focus-visible,
+  header.nav-on-dark .nav-icon[aria-expanded="true"] {
+    color: #fff !important;
   }
   .img-zoom {
     overflow: hidden;
@@ -203,7 +275,21 @@
     @apply bg-ink text-mist;
   }
   .shop-chip-idle {
-    @apply bg-secondary text-foreground hover:bg-accent;
+    @apply bg-secondary text-foreground transition-colors duration-150 hover:border-[#5c4a3a]/35 hover:bg-[#5c4033]/10 hover:text-ink;
+  }
+  /* Neutral controls / nav → warm brown hover (site umber) */
+  .hover-brand {
+    @apply transition-colors duration-150 hover:border-[#5c4a3a]/45 hover:bg-[#5c4033]/10 hover:text-[#5c4033];
+  }
+  .hover-brand-text {
+    @apply transition-colors duration-200 hover:text-[#8b6f5c];
+  }
+  .hover-brand-text-on-dark {
+    @apply transition-colors duration-200 hover:text-[#c4a484];
+  }
+  /* Delete / trash icons: grey default → red on hover */
+  .btn-delete {
+    @apply text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive;
   }
   .glass-cta {
     background: rgba(255, 255, 255, 0.18);

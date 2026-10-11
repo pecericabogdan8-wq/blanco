@@ -339,7 +339,7 @@ export function ImageGalleryField({
                           e.stopPropagation();
                           removeAt(i);
                         }}
-                        className="flex size-7 items-center justify-center bg-white/95 text-[#9b1c1c] transition hover:bg-[#9b1c1c] hover:text-white"
+                        className="btn-delete flex size-7 items-center justify-center bg-white/95"
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -395,7 +395,7 @@ export function ImageGalleryField({
               type="button"
               disabled={uploading}
               onClick={() => inputRef.current?.click()}
-              className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 border border-dashed border-border bg-[#faf9f7] text-muted-foreground transition hover:border-ink/50 hover:text-ink"
+              className="hover-brand flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 border border-dashed border-border bg-[#faf9f7] text-muted-foreground"
             >
               <ImagePlus className="size-5" />
               <span className="text-[11px] tracking-wide uppercase">Ще фото</span>
@@ -420,7 +420,7 @@ export function ImageGalleryField({
             type="button"
             variant="outline"
             size="sm"
-            className="text-[#9b1c1c] hover:bg-[#9b1c1c]/5 hover:text-[#9b1c1c]"
+            className="btn-delete"
             onClick={() => {
               if (!confirm(`Прибрати всі ${images.length} фото з каруселі?`))
                 return;

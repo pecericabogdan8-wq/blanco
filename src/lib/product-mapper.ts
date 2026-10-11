@@ -4,6 +4,7 @@ import type {
   ProductImage,
   ProductVariant,
 } from "@prisma/client";
+import { sortSizes } from "@/lib/format";
 import type { Product, ProductSize } from "@/lib/types";
 import { cleanImageSrc, versionedImageSrc } from "@/lib/product-images";
 
@@ -42,16 +43,32 @@ export function mapProduct(p: DbProductFull): Product {
     inventory[`${color.key}:${v.size}`] = v.stock;
   }
 
-  const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "ONE"];
-  const sizes = [...sizeSet].sort(
-    (a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b)
-  ) as ProductSize[];
+  const sizes = sortSizes([...sizeSet]) as ProductSize[];
 
   const version = p.updatedAt.getTime();
   const orderedImages = [...p.images].sort((a, b) => a.sortOrder - b.sortOrder);
   const rawUrls = orderedImages.map((img) => img.url);
 
   const detailsUk = parseJsonArray(p.detailsUk);
+
+  let sizeChart: Product["sizeChart"];
+  if (p.sizeChart) {
+    try {
+      const rows = JSON.parse(p.sizeChart) as NonNullable<Product["sizeChart"]>;
+      if (Array.isArray(rows)) {
+        const rank = new Map(
+          sortSizes(rows.map((r) => String(r.size))).map((s, i) => [s, i])
+        );
+        sizeChart = [...rows].sort(
+          (a, b) =>
+            (rank.get(String(a.size).toUpperCase()) ?? 99) -
+            (rank.get(String(b.size).toUpperCase()) ?? 99)
+        );
+      }
+    } catch {
+      sizeChart = undefined;
+    }
+  }
 
   return {
     id: p.id,
@@ -76,9 +93,7 @@ export function mapProduct(p: DbProductFull): Product {
     images: rawUrls.map((src) =>
       versionedImageSrc(cleanImageSrc(src), version)
     ),
-    sizeChart: p.sizeChart
-      ? (JSON.parse(p.sizeChart) as Product["sizeChart"])
-      : undefined,
+    sizeChart,
     colors,
     sizes,
     inventory,

@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { ReturnRequestForm } from "@/components/returns/return-request-form";
+import { ReturnsPageNav } from "@/components/returns/returns-page-nav";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
@@ -15,8 +16,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-const navLinkClass =
-  "shrink-0 px-3 py-2 text-[11px] tracking-[0.14em] text-muted-foreground uppercase transition hover:text-foreground";
+/** Subheads under a section — sans, not the display script of section titles. */
+const subheadClass =
+  "font-sans text-sm font-semibold tracking-[0.12em] text-foreground uppercase";
 
 export default async function ReturnsPage({ params }: Props) {
   const { locale } = await params;
@@ -29,20 +31,14 @@ export default async function ReturnsPage({ params }: Props) {
       <h1 className="font-display text-4xl tracking-tight">{t("title")}</h1>
       <p className="mt-3 text-sm text-muted-foreground">{t("pageIntro")}</p>
 
-      <nav
-        className="sticky top-16 z-20 mt-8 -mx-4 flex gap-1 overflow-x-auto border-y border-border bg-[#f7f6f3]/95 px-4 py-2 backdrop-blur-sm sm:mx-0 sm:px-0"
-        aria-label={t("pageNav")}
-      >
-        <a href="#dostavka" className={navLinkClass}>
-          {t("navDelivery")}
-        </a>
-        <a href="#povernennya" className={navLinkClass}>
-          {t("navReturns")}
-        </a>
-        <a href="#zayavka" className={navLinkClass}>
-          {t("navForm")}
-        </a>
-      </nav>
+      <ReturnsPageNav
+        ariaLabel={t("pageNav")}
+        items={[
+          { id: "dostavka", label: t("navDelivery") },
+          { id: "povernennya", label: t("navReturns") },
+          { id: "zayavka", label: t("navForm") },
+        ]}
+      />
 
       <div className="mt-10 space-y-14 text-muted-foreground">
         <section
@@ -54,16 +50,12 @@ export default async function ReturnsPage({ params }: Props) {
           </h2>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("ordersTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("ordersTitle")}</h3>
             <p className="mt-3 leading-relaxed">{t("ordersBody")}</p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("uaTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("uaTitle")}</h3>
             <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
               <li>
                 {t.rich("uaCarrier", {
@@ -84,9 +76,7 @@ export default async function ReturnsPage({ params }: Props) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("intlTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("intlTitle")}</h3>
             <p className="mt-3 leading-relaxed">
               {t.rich("intlBody", {
                 handle: (chunks) => (
@@ -113,16 +103,12 @@ export default async function ReturnsPage({ params }: Props) {
           </h2>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("defectiveTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("defectiveTitle")}</h3>
             <p className="mt-3 leading-relaxed">{t("defectiveBody")}</p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("qualityTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("qualityTitle")}</h3>
             <p className="mt-3 leading-relaxed">
               {t.rich("qualityBody", {
                 days: (chunks) => (
@@ -133,9 +119,7 @@ export default async function ReturnsPage({ params }: Props) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("conditionsTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("conditionsTitle")}</h3>
             <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
               <li>{t("condition1")}</li>
               <li>{t("condition2")}</li>
@@ -145,9 +129,7 @@ export default async function ReturnsPage({ params }: Props) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("whatToDoTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("whatToDoTitle")}</h3>
             <ol className="mt-3 list-decimal space-y-2 pl-5 leading-relaxed">
               <li>{t("whatToDo1")}</li>
               <li>{t("whatToDo2")}</li>
@@ -157,17 +139,13 @@ export default async function ReturnsPage({ params }: Props) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("compensationTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("compensationTitle")}</h3>
             <p className="mt-3 leading-relaxed">{t("compensationBody")}</p>
             <p className="mt-3 leading-relaxed">{t("returnCost")}</p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {t("exchangeTitle")}
-            </h3>
+            <h3 className={subheadClass}>{t("exchangeTitle")}</h3>
             <p className="mt-3 leading-relaxed">{t("exchangeBody")}</p>
           </div>
         </section>

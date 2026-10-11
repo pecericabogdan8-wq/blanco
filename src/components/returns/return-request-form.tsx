@@ -80,15 +80,14 @@ export function ReturnRequestForm({ className }: { className?: string }) {
   if (done) {
     return (
       <div
-        id="zayavka"
         className={cn(
-          "scroll-mt-28 space-y-3 border border-border bg-white p-5 sm:p-6",
+          "space-y-3 border border-border bg-white p-5 sm:p-6",
           className
         )}
       >
-        <h2 className="text-lg font-semibold tracking-wide uppercase">
+        <h3 className="text-sm font-semibold tracking-wide uppercase">
           {t("afterTitle")}
-        </h2>
+        </h3>
         <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
           <li>{t("after1")}</li>
           <li>{t("after2")}</li>
@@ -109,16 +108,12 @@ export function ReturnRequestForm({ className }: { className?: string }) {
 
   return (
     <form
-      id="zayavka"
       onSubmit={handleSubmit}
       className={cn(
-        "scroll-mt-28 space-y-4 border border-border bg-white p-5 sm:p-6",
+        "space-y-4 border border-border bg-white p-5 sm:p-6",
         className
       )}
     >
-      <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
-        {t("formTitle")}
-      </h2>
       <p className="text-sm leading-relaxed text-muted-foreground">
         {t("formIntro")}
       </p>

@@ -17,6 +17,18 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
+function siteUrl(): URL {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.RAILWAY_PUBLIC_DOMAIN?.trim() ||
+    "http://127.0.0.1:3847";
+  try {
+    return new URL(raw.includes("://") ? raw : `https://${raw}`);
+  } catch {
+    return new URL("http://127.0.0.1:3847");
+  }
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations({ locale: "uk", namespace: "Meta" });
   return {
@@ -25,9 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · blanco",
     },
     description: t("description"),
-    metadataBase: new URL(
-      process.env.NEXT_PUBLIC_SITE_URL ?? "http://127.0.0.1:3847"
-    ),
+    metadataBase: siteUrl(),
     icons: {
       icon: [{ url: "/favicon.png", type: "image/png" }],
       apple: [{ url: "/brand/logo-512.png" }],

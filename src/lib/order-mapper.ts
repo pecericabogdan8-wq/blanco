@@ -24,6 +24,7 @@ type OrderRow = {
   city: string;
   address: string;
   novaPoshta: string | null;
+  novaPoshtaTtn?: string | null;
   userId: string | null;
   items: OrderItemRow[];
 };
@@ -69,6 +70,7 @@ export function mapOrder(o: OrderRow) {
       city: o.city,
       address: o.address,
       novaPoshta: o.novaPoshta ?? undefined,
+      novaPoshtaTtn: o.novaPoshtaTtn ?? undefined,
     },
     items: o.items.map(mapOrderItem),
   };

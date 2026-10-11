@@ -27,6 +27,7 @@ import {
 } from "@/lib/color-palette";
 import { CATEGORY_LABELS, ORDER_STATUS_LABELS } from "@/lib/demo-data";
 import { availableColorSizes, formatUAH, totalStock } from "@/lib/format";
+import { isBestseller, isProductNew } from "@/lib/product-badges";
 import type {
   Category,
   Order,
@@ -35,6 +36,10 @@ import type {
   ProductSize,
 } from "@/lib/types";
 import { useShopStore } from "@/store/shop-store";
+import {
+  RETURN_REASON_LABELS,
+  RETURN_STATUS_LABELS,
+} from "@/lib/return-mapper";
 import { cn } from "@/lib/utils";
 
 type SizeChartRow = {
@@ -64,6 +69,25 @@ type OrderRow = Order & {
     provider: string;
     amount: number;
   }[];
+};
+
+type ReturnRow = {
+  id: string;
+  orderId: string;
+  email: string;
+  phone?: string;
+  reason: keyof typeof RETURN_REASON_LABELS;
+  message: string;
+  adminNote?: string;
+  status: keyof typeof RETURN_STATUS_LABELS;
+  restoreStock: boolean;
+  refundWanted: boolean;
+  createdAt: string;
+  order?: {
+    id: string;
+    total: number;
+    customerName: string;
+  };
 };
 
 const FLOW: OrderStatus[] = [
@@ -170,7 +194,14 @@ export default function AdminPage() {
   const [trash, setTrash] = useState<Product[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [returns, setReturns] = useState<ReturnRow[]>([]);
+  const [bestsellerIds, setBestsellerIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quickSale, setQuickSale] = useState({
+    colorKey: "",
+    size: "",
+    qty: "1",
+  });
   const [form, setForm] = useState(emptyForm());
   const [editId, setEditId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("orders");
@@ -184,16 +215,20 @@ export default function AdminPage() {
   });
 
   const reload = useCallback(async () => {
-    const [p, tr, o, t] = await Promise.all([
+    const [p, tr, o, t, r, b] = await Promise.all([
       fetch("/api/products"),
       fetch("/api/products?trash=1"),
       fetch("/api/orders?all=1"),
       fetch("/api/support"),
+      fetch("/api/returns"),
+      fetch("/api/stats/bestsellers?limit=3"),
     ]);
     const pd = await p.json();
     const trd = await tr.json();
     const od = await o.json();
     const td = await t.json();
+    const rd = await r.json();
+    const bd = await b.json();
     if (pd.ok) {
       setProducts(pd.products);
       setProductsStore(pd.products);
@@ -201,6 +236,10 @@ export default function AdminPage() {
     if (trd.ok) setTrash(trd.products);
     if (od.ok) setOrders(od.orders);
     if (td.ok) setTickets(td.tickets);
+    if (rd.ok) setReturns(rd.returns);
+    if (bd.ok && Array.isArray(bd.products)) {
+      setBestsellerIds(bd.products.map((x: Product) => x.id));
+    }
     setLoading(false);
   }, [setProductsStore]);
 
@@ -489,6 +528,7 @@ export default function AdminPage() {
                 ["orders", `Замовлення (${orders.length})`],
                 ["products", `Товари (${products.length})`],
                 ["tickets", `Тікети (${tickets.length})`],
+                ["returns", `Повернення (${returns.length})`],
               ] as const
             ).map(([v, label]) => (
               <TabsTrigger
@@ -611,6 +651,33 @@ export default function AdminPage() {
                         <p className="text-xs text-muted-foreground sm:col-span-2">
                           {new Date(o.createdAt).toLocaleString("uk-UA")}
                         </p>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor={`ttn-${o.id}`}>ТТН Нова Пошта</Label>
+                          <div className="flex flex-wrap gap-2">
+                            <Input
+                              id={`ttn-${o.id}`}
+                              defaultValue={o.customer.novaPoshtaTtn ?? ""}
+                              placeholder="204…"
+                              className="max-w-xs bg-white"
+                              onBlur={async (e) => {
+                                const v = e.target.value.trim();
+                                const res = await fetch(`/api/orders/${o.id}`, {
+                                  method: "PATCH",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ novaPoshtaTtn: v }),
+                                });
+                                const data = await res.json();
+                                if (!data.ok) toast.error(data.error);
+                                else toast.success("ТТН збережено");
+                              }}
+                            />
+                            <p className="text-xs text-muted-foreground self-center">
+                              Збережеться при втраті фокусу
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       <Select
                         value={o.status}
@@ -654,6 +721,98 @@ export default function AdminPage() {
                 </div>
               );
             })}
+          </TabsContent>
+
+          <TabsContent value="returns" className="space-y-4">
+            <p className="border border-border bg-[#faf9f7] px-4 py-3 text-sm text-muted-foreground">
+              Заявки з сайту. «Отримано» / «Повернено кошти» / «Обмін» повертають
+              одиниці на склад один раз (якщо ще не повернуто через скасування
+              замовлення). «Повернено кошти» також ставить платіж у статус
+              refunded (без реального LiqPay).
+            </p>
+            {returns.length === 0 && (
+              <p className="border border-dashed border-border bg-white p-10 text-center text-muted-foreground">
+                Заявок на повернення ще немає
+              </p>
+            )}
+            <ul className="space-y-3">
+              {returns.map((rr) => (
+                <li
+                  key={rr.id}
+                  className="border border-border bg-white p-4 sm:p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {rr.orderId} · {RETURN_REASON_LABELS[rr.reason]}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {rr.email}
+                        {rr.phone ? ` · ${rr.phone}` : ""}
+                      </p>
+                      <p className="mt-2 text-sm">{rr.message}</p>
+                      {rr.adminNote && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Нотатка: {rr.adminNote}
+                        </p>
+                      )}
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        {new Date(rr.createdAt).toLocaleString("uk-UA")} ·{" "}
+                        {rr.refundWanted ? "повернення коштів" : "обмін"}
+                        {rr.restoreStock ? " · сток повернуто" : ""}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#f3f2ef] px-2.5 py-1 text-[11px] font-medium ring-1 ring-border">
+                      {RETURN_STATUS_LABELS[rr.status]}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["approved", "Схвалити"],
+                        ["rejected", "Відхилити"],
+                        ["awaiting_parcel", "Чекаємо посилку"],
+                        ["received", "Отримано (склад)"],
+                        ["refunded", "Кошти повернено"],
+                        ["closed", "Закрити"],
+                      ] as const
+                    ).map(([st, label]) => (
+                      <Button
+                        key={st}
+                        type="button"
+                        size="sm"
+                        variant={rr.status === st ? "default" : "outline"}
+                        className={cn(
+                          rr.status === st && "bg-ink text-mist hover:bg-ink/90"
+                        )}
+                        onClick={async () => {
+                          const res = await fetch(`/api/returns/${rr.id}`, {
+                            method: "PATCH",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({ status: st }),
+                          });
+                          const data = await res.json();
+                          if (!data.ok) {
+                            toast.error(data.error ?? "Помилка");
+                            return;
+                          }
+                          toast.success(
+                            data.stockRestored
+                              ? `${label} · сток на складі оновлено`
+                              : label
+                          );
+                          await reload();
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </TabsContent>
 
           <TabsContent value="products" className="space-y-4">
@@ -1118,77 +1277,288 @@ export default function AdminPage() {
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Склад — колір × розмір</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Кількість на кожну комбінацію. Порожньо = 0.
+                    Кожна клітинка = окремий залишок (напр. білий S = 3, синій M
+                    = 4). Порожньо = 0. Суми рахуються автоматично.
                   </p>
                   {form.colors.length === 0 ||
                   parseSizesCsv(form.sizes).length === 0 ? (
                     <p className="border border-dashed border-border bg-[#faf9f7] px-3 py-4 text-center text-xs text-muted-foreground">
-                      Додай кольори та розміри вище
+                      Додай кольори та розміри вище — зʼявиться таблиця
                     </p>
                   ) : (
-                    <div className="overflow-x-auto border border-border bg-white">
-                      <table className="w-full min-w-[280px] text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
-                            <th className="px-2 py-2 sm:px-3">Колір</th>
-                            {parseSizesCsv(form.sizes).map((s) => (
-                              <th
-                                key={s}
-                                className="px-1 py-2 text-center font-medium"
-                              >
-                                {s}
+                    <>
+                      <div className="overflow-x-auto border border-border bg-white">
+                        <table className="w-full min-w-[320px] text-sm">
+                          <thead>
+                            <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                              <th className="px-2 py-2 sm:px-3">Колір</th>
+                              {parseSizesCsv(form.sizes).map((s) => (
+                                <th
+                                  key={s}
+                                  className="px-1 py-2 text-center font-medium"
+                                >
+                                  {s}
+                                </th>
+                              ))}
+                              <th className="px-2 py-2 text-center font-medium">
+                                Σ
                               </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {form.colors.map((c) => (
-                            <tr
-                              key={c.key}
-                              className="border-b border-border last:border-0"
-                            >
-                              <td className="px-2 py-1.5 sm:px-3">
-                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm">
-                                  <span
-                                    className="size-3 shrink-0 rounded-full border border-black/20"
-                                    style={{ backgroundColor: c.hex }}
-                                  />
-                                  <span className="max-w-[5rem] truncate sm:max-w-none">
-                                    {c.name || c.key}
-                                  </span>
-                                </span>
-                              </td>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {form.colors.map((c) => {
+                              const sizes = parseSizesCsv(form.sizes);
+                              const rowSum = sizes.reduce((acc, s) => {
+                                const raw = String(
+                                  form.inventory[invKey(c.key, s)] ?? ""
+                                ).trim();
+                                return acc + (raw === "" ? 0 : Number(raw) || 0);
+                              }, 0);
+                              return (
+                                <tr
+                                  key={c.key}
+                                  className="border-b border-border last:border-0"
+                                >
+                                  <td className="px-2 py-1.5 sm:px-3">
+                                    <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm">
+                                      <span
+                                        className="size-3 shrink-0 rounded-full border border-black/20"
+                                        style={{ backgroundColor: c.hex }}
+                                        title={c.name || c.key}
+                                      />
+                                      <span
+                                        className="max-w-[5rem] truncate sm:max-w-none"
+                                        title={c.name || c.key}
+                                      >
+                                        {c.name || c.key}
+                                      </span>
+                                    </span>
+                                  </td>
+                                  {sizes.map((s) => {
+                                    const key = invKey(c.key, s);
+                                    const val = form.inventory[key] ?? "";
+                                    return (
+                                      <td key={key} className="px-1 py-1">
+                                        <Input
+                                          inputMode="numeric"
+                                          className={cn(
+                                            "h-8 min-w-[2.5rem] text-center tabular-nums",
+                                            val === "0" &&
+                                              "border-destructive/40"
+                                          )}
+                                          value={val}
+                                          placeholder="0"
+                                          onChange={(e) => {
+                                            const raw = e.target.value.replace(
+                                              /[^\d]/g,
+                                              ""
+                                            );
+                                            setForm((f) => ({
+                                              ...f,
+                                              inventory: {
+                                                ...f.inventory,
+                                                [key]: raw,
+                                              },
+                                            }));
+                                          }}
+                                        />
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="px-2 py-1.5 text-center text-xs font-medium tabular-nums text-muted-foreground">
+                                    {rowSum}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            <tr className="bg-[#faf9f7] text-[11px] text-muted-foreground">
+                              <td className="px-2 py-2 sm:px-3">Разом</td>
                               {parseSizesCsv(form.sizes).map((s) => {
-                                const key = invKey(c.key, s);
+                                const col = form.colors.reduce((acc, c) => {
+                                  const raw = String(
+                                    form.inventory[invKey(c.key, s)] ?? ""
+                                  ).trim();
+                                  return (
+                                    acc + (raw === "" ? 0 : Number(raw) || 0)
+                                  );
+                                }, 0);
                                 return (
-                                  <td key={key} className="px-1 py-1">
-                                    <Input
-                                      inputMode="numeric"
-                                      className="h-8 min-w-[2.5rem] text-center tabular-nums"
-                                      value={form.inventory[key] ?? ""}
-                                      placeholder="0"
-                                      onChange={(e) => {
-                                        const raw = e.target.value.replace(
-                                          /[^\d]/g,
-                                          ""
-                                        );
-                                        setForm((f) => ({
-                                          ...f,
-                                          inventory: {
-                                            ...f.inventory,
-                                            [key]: raw,
-                                          },
-                                        }));
-                                      }}
-                                    />
+                                  <td
+                                    key={`sum-${s}`}
+                                    className="px-1 py-2 text-center tabular-nums font-medium"
+                                  >
+                                    {col}
                                   </td>
                                 );
                               })}
+                              <td className="px-2 py-2 text-center font-semibold tabular-nums text-foreground">
+                                {Object.values(form.inventory).reduce(
+                                  (a, v) =>
+                                    a +
+                                    (String(v).trim() === ""
+                                      ? 0
+                                      : Number(v) || 0),
+                                  0
+                                )}
+                              </td>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </tbody>
+                        </table>
+                      </div>
+                      {editId && (
+                        <div className="space-y-2 border border-dashed border-border bg-[#faf9f7] p-3">
+                          <p className="text-xs font-medium">
+                            Офлайн / бартер — швидко списати 1 од. без замовлення
+                          </p>
+                          <div className="flex flex-wrap items-end gap-2">
+                            <div className="min-w-[7rem] flex-1 space-y-1">
+                              <Label className="text-[10px]">Колір</Label>
+                              <Select
+                                value={
+                                  quickSale.colorKey ||
+                                  form.colors[0]?.key ||
+                                  null
+                                }
+                                onValueChange={(v) =>
+                                  setQuickSale((q) => ({
+                                    ...q,
+                                    colorKey: String(v ?? ""),
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="w-full bg-white">
+                                  <SelectValue placeholder="Колір">
+                                    {(v) => {
+                                      const c = form.colors.find(
+                                        (x) => x.key === String(v ?? "")
+                                      );
+                                      return c?.name || String(v ?? "");
+                                    }}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {form.colors.map((c) => (
+                                    <SelectItem key={c.key} value={c.key}>
+                                      {c.name || c.key}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="min-w-[5rem] space-y-1">
+                              <Label className="text-[10px]">Розмір</Label>
+                              <Select
+                                value={
+                                  quickSale.size ||
+                                  parseSizesCsv(form.sizes)[0] ||
+                                  null
+                                }
+                                onValueChange={(v) =>
+                                  setQuickSale((q) => ({
+                                    ...q,
+                                    size: String(v ?? ""),
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="w-full bg-white">
+                                  <SelectValue placeholder="Size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {parseSizesCsv(form.sizes).map((s) => (
+                                    <SelectItem key={s} value={s}>
+                                      {s}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="w-16 space-y-1">
+                              <Label className="text-[10px]">К-сть</Label>
+                              <Input
+                                inputMode="numeric"
+                                className="bg-white"
+                                value={quickSale.qty}
+                                placeholder="1"
+                                onChange={(e) =>
+                                  setQuickSale((q) => ({
+                                    ...q,
+                                    qty: e.target.value.replace(/[^\d]/g, ""),
+                                  }))
+                                }
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                const colorKey =
+                                  quickSale.colorKey || form.colors[0]?.key;
+                                const size =
+                                  quickSale.size ||
+                                  parseSizesCsv(form.sizes)[0];
+                                const qty = Math.max(
+                                  1,
+                                  Number(quickSale.qty) || 1
+                                );
+                                if (!editId || !colorKey || !size) return;
+                                const key = invKey(colorKey, size);
+                                const have = Math.max(
+                                  0,
+                                  Number(form.inventory[key]) || 0
+                                );
+                                if (have < qty) {
+                                  toast.error(
+                                    `У наявності лише ${have} шт. (${colorKey}/${size})`
+                                  );
+                                  return;
+                                }
+                                const next = have - qty;
+                                const inventory = {
+                                  ...Object.fromEntries(
+                                    Object.entries(form.inventory).map(
+                                      ([k, v]) => [
+                                        k,
+                                        Math.max(0, Number(v) || 0),
+                                      ]
+                                    )
+                                  ),
+                                  [key]: next,
+                                };
+                                const res = await fetch(
+                                  `/api/products/${editId}`,
+                                  {
+                                    method: "PATCH",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({ inventory }),
+                                  }
+                                );
+                                const data = await res.json();
+                                if (!data.ok) {
+                                  toast.error(data.error ?? "Помилка");
+                                  return;
+                                }
+                                setForm((f) => ({
+                                  ...f,
+                                  inventory: {
+                                    ...f.inventory,
+                                    [key]: String(next),
+                                  },
+                                }));
+                                toast.success(
+                                  `Списано ${qty} · ${colorKey}/${size} → ${next}`
+                                );
+                                await reload();
+                              }}
+                            >
+                              Списати
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -1391,12 +1761,41 @@ export default function AdminPage() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">
-                          {p.nameUk || p.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatUAH(p.salePrice ?? p.price)}
-                          {p.salePrice ? " · SALE" : ""}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="truncate font-medium">
+                            {p.nameUk || p.name}
+                          </p>
+                          {p.salePrice != null && p.salePrice < p.price && (
+                            <span className="bg-ink px-1.5 py-0.5 text-[9px] tracking-[0.12em] text-mist uppercase">
+                              Sale
+                            </span>
+                          )}
+                          {isBestseller(p.id, bestsellerIds) && (
+                            <span className="bg-ink px-1.5 py-0.5 text-[9px] tracking-[0.12em] text-mist uppercase">
+                              Bestseller
+                            </span>
+                          )}
+                          {isProductNew(p) && (
+                            <span className="bg-[#3d5c4a] px-1.5 py-0.5 text-[9px] tracking-[0.12em] text-mist uppercase">
+                              New
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 flex flex-wrap items-baseline gap-2 text-xs">
+                          {p.salePrice != null && p.salePrice < p.price ? (
+                            <>
+                              <span className="font-medium text-[#c41e3a] tabular-nums">
+                                {formatUAH(p.salePrice)}
+                              </span>
+                              <span className="text-muted-foreground line-through tabular-nums">
+                                {formatUAH(p.price)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground tabular-nums">
+                              {formatUAH(p.price)}
+                            </span>
+                          )}
                         </p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                           {variants.length === 0 ? (
@@ -1408,6 +1807,7 @@ export default function AdminPage() {
                               <span
                                 key={v.id}
                                 className="inline-flex items-center gap-1.5"
+                                title={`${v.name}: ${v.sizes.join(", ")}`}
                               >
                                 {i > 0 ? (
                                   <span className="text-border/80" aria-hidden>
@@ -1418,6 +1818,7 @@ export default function AdminPage() {
                                   className="size-2.5 shrink-0 rounded-full border border-black/20"
                                   style={{ backgroundColor: v.hex }}
                                   title={v.name}
+                                  aria-label={v.name}
                                 />
                                 <span className="tabular-nums text-foreground/80">
                                   {v.sizes.join("/")}

@@ -62,14 +62,17 @@ export async function PATCH(req: Request, ctx: Ctx) {
     await requireAdmin();
     const { id } = await ctx.params;
     const body = await req.json();
-    const status = body.status as OrderStatus;
-    if (!ALLOWED.includes(status)) return jsonError("Invalid status");
+    const status = body.status as OrderStatus | undefined;
+    if (status != null && !ALLOWED.includes(status)) {
+      return jsonError("Invalid status");
+    }
 
     const existing = await prisma.order.findUnique({ where: { id } });
     if (!existing) return jsonError("Замовлення не знайдено", 404);
 
+    const nextStatus = status ?? existing.status;
     const wasRestoring = isStockRestoringStatus(existing.status);
-    const willRestore = isStockRestoringStatus(status);
+    const willRestore = isStockRestoringStatus(nextStatus);
 
     // Cancel / return → put stock back once
     if (willRestore && !wasRestoring) {
@@ -87,9 +90,17 @@ export async function PATCH(req: Request, ctx: Ctx) {
       }
     }
 
+    const novaPoshtaTtn =
+      body.novaPoshtaTtn !== undefined
+        ? String(body.novaPoshtaTtn).trim() || null
+        : undefined;
+
     const order = await prisma.order.update({
       where: { id },
-      data: { status },
+      data: {
+        ...(status != null ? { status: nextStatus } : {}),
+        ...(novaPoshtaTtn !== undefined ? { novaPoshtaTtn } : {}),
+      },
       include: {
         items: { include: orderItemInclude },
         payments: true,

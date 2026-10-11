@@ -1,6 +1,8 @@
 import { Link } from "@/i18n/navigation";
+import { ReturnRequestForm } from "@/components/returns/return-request-form";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Suspense } from "react";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -75,6 +77,65 @@ export default async function ReturnsPage({ params }: Props) {
 
         <section>
           <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
+            {t("defectiveTitle")}
+          </h2>
+          <p className="mt-3 leading-relaxed">{t("defectiveBody")}</p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
+            {t("qualityTitle")}
+          </h2>
+          <p className="mt-3 leading-relaxed">
+            {t.rich("qualityBody", {
+              days: (chunks) => (
+                <strong className="text-foreground">{chunks}</strong>
+              ),
+            })}
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
+            {t("conditionsTitle")}
+          </h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
+            <li>{t("condition1")}</li>
+            <li>{t("condition2")}</li>
+            <li>{t("condition3")}</li>
+          </ul>
+          <p className="mt-3 text-sm leading-relaxed">{t("excludedNote")}</p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
+            {t("whatToDoTitle")}
+          </h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 leading-relaxed">
+            <li>{t("whatToDo1")}</li>
+            <li>{t("whatToDo2")}</li>
+            <li>{t("whatToDo3")}</li>
+            <li>{t("whatToDo4")}</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
+            {t("compensationTitle")}
+          </h2>
+          <p className="mt-3 leading-relaxed">{t("compensationBody")}</p>
+          <p className="mt-3 leading-relaxed">{t("returnCost")}</p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
+            {t("exchangeTitle")}
+          </h2>
+          <p className="mt-3 leading-relaxed">{t("exchangeBody")}</p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold tracking-wide text-foreground uppercase">
             {t("returnTitle")}
           </h2>
           <p className="mt-3 leading-relaxed">
@@ -89,8 +150,17 @@ export default async function ReturnsPage({ params }: Props) {
             <li>{t("returnStep2")}</li>
             <li>{t("returnStep3")}</li>
           </ol>
-          <p className="mt-3 leading-relaxed">{t("returnCost")}</p>
         </section>
+
+        <Suspense
+          fallback={
+            <div className="border border-border bg-white p-6 text-sm text-muted-foreground">
+              {t("formLoading")}
+            </div>
+          }
+        >
+          <ReturnRequestForm />
+        </Suspense>
 
         <p>
           <Link href="/catalog" className="text-foreground underline">

@@ -53,6 +53,24 @@ enum TicketStatus {
   resolved
 }
 
+enum ReturnReason {
+  defective
+  quality_dislike
+  wrong_size
+  other
+}
+
+enum ReturnRequestStatus {
+  requested
+  approved
+  rejected
+  awaiting_parcel
+  received
+  refunded
+  exchanged
+  closed
+}
+
 // ─── Auth ───────────────────────────────────────────────
 
 model User {
@@ -67,11 +85,12 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  orders   Order[]
-  wishlist WishlistItem[]
-  reviews  Review[]
-  tickets  SupportTicket[]
-  sessions Session[]
+  orders         Order[]
+  wishlist       WishlistItem[]
+  reviews        Review[]
+  tickets        SupportTicket[]
+  returnRequests ReturnRequest[]
+  sessions       Session[]
 }
 
 model Session {
@@ -197,15 +216,18 @@ model Order {
   customerPhone String
   city          String
   address       String
-  novaPoshta    String?
-  notes         String?
+  novaPoshta      String?
+  /// TTN tracking number (Нова Пошта)
+  novaPoshtaTtn   String?
+  notes           String?
   /// true after stock was put back (cancel / return) — prevents double restore
-  stockRestored Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  stockRestored   Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   items    OrderItem[]
   payments Payment[]
+  returns  ReturnRequest[]
 
   @@index([userId])
   @@index([status])
@@ -276,6 +298,30 @@ model SupportTicket {
   telegramSent Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+model ReturnRequest {
+  id           String              @id @default(cuid())
+  orderId      String
+  order        Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email        String
+  phone        String?
+  reason       ReturnReason
+  message      String
+  adminNote    String?
+  status       ReturnRequestStatus @default(requested)
+  /// true after admin confirmed receipt and stock was restored for this request
+  restoreStock Boolean             @default(false)
+  refundWanted Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ─── Site content / config ──────────────────────────────

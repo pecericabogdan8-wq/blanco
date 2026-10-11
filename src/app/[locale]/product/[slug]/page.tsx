@@ -34,6 +34,13 @@ function firstAvailableSize(product: Product, colorKey: string): ProductSize | "
   return product.sizes[0] ?? "";
 }
 
+function descriptionParagraphs(text: string): string[] {
+  return text
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
 export default function ProductPage({
   params,
 }: {
@@ -42,7 +49,6 @@ export default function ProductPage({
   const { slug } = use(params);
   const t = useTranslations("Product");
   const tNav = useTranslations("Nav");
-  const tCat = useTranslations("Categories");
   const storeProducts = useShopStore((s) => s.products);
   const setProducts = useShopStore((s) => s.setProducts);
   const addToCart = useShopStore((s) => s.addToCart);
@@ -164,6 +170,18 @@ export default function ProductPage({
     !discontinued &&
     product.sizes.some((s) => stockFor(product.inventory, colorKey, s) > 0);
 
+  const descParagraphs = descriptionParagraphs(
+    localizedProductDescription(product)
+  );
+  const detailLines = localizedProductDetails(product);
+  const careLines = detailLines.filter((d) =>
+    /прати|вивер|барабан|30|°|суш/i.test(d)
+  );
+  const otherDetails =
+    careLines.length > 0
+      ? detailLines.filter((d) => !careLines.includes(d))
+      : detailLines;
+
   function handleAdd() {
     if (!product || !activeColor || !activeSize) {
       toast.error(t("pickColorSize"));
@@ -187,6 +205,8 @@ export default function ProductPage({
     else toast.error(res.error);
   }
 
+  const inStockNow = !discontinued && anyStock && stock > 0;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
       <Link
@@ -206,19 +226,31 @@ export default function ProductPage({
         </div>
 
         <div>
-          <p className="text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
-            {localizedFigure(product) ?? tCat(product.category)}
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight uppercase sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight uppercase sm:text-3xl">
             {localizedProductName(product)}
           </h1>
 
-          <p className="mt-3 text-sm text-muted-foreground">
-            {tCat(product.category)}
+          <p className="mt-2 text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
+            {t("skuLabel")}: {product.slug}
+          </p>
+
+          <p
+            className={cn(
+              "mt-3 text-sm font-medium",
+              inStockNow ? "text-emerald-700" : "text-destructive"
+            )}
+          >
+            {discontinued
+              ? t("discontinued")
+              : !anyStock
+                ? t("allSoldOut")
+                : stock > 0
+                  ? t("inStockLabel")
+                  : t("outOfStockShort")}
           </p>
 
           {discontinued && (
-            <div className="mt-5 border border-border bg-[#f3f2ef] px-4 py-3">
+            <div className="mt-4 border border-border bg-[#f3f2ef] px-4 py-3">
               <p className="text-sm font-medium">{t("discontinued")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("discontinuedHint")}
@@ -226,7 +258,7 @@ export default function ProductPage({
             </div>
           )}
           {!discontinued && !anyStock && (
-            <div className="mt-5 border border-border bg-[#f3f2ef] px-4 py-3">
+            <div className="mt-4 border border-border bg-[#f3f2ef] px-4 py-3">
               <p className="text-sm font-medium">{t("allSoldOut")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("allSoldOutHint")}
@@ -234,207 +266,250 @@ export default function ProductPage({
             </div>
           )}
 
-          <div className="mt-6 flex flex-wrap items-baseline gap-2">
-            <p
-              className={cn(
-                "text-2xl font-semibold tracking-tight sm:text-[1.75rem]",
-                onSale && "text-[#c41e3a]"
-              )}
-            >
-              {formatUAH(current)}
-            </p>
-            {onSale && (
-              <p className="text-sm text-muted-foreground line-through">
-                {formatUAH(original)}
+          <div className="mt-6 flex flex-wrap items-center gap-4 border-b border-border pb-6">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <p
+                className={cn(
+                  "text-2xl font-semibold tracking-tight sm:text-[1.75rem]",
+                  onSale && "text-[#c41e3a]"
+                )}
+              >
+                {formatUAH(current)}
               </p>
+              {onSale && (
+                <p className="text-sm text-muted-foreground line-through">
+                  {formatUAH(original)}
+                </p>
+              )}
+            </div>
+            {!discontinued && (
+              <Button
+                size="lg"
+                onClick={handleAdd}
+                disabled={purchaseBlocked}
+                className="hidden bg-[#c41e3a] tracking-[0.12em] uppercase hover:bg-[#a81830] disabled:bg-ink/30 md:inline-flex md:min-w-[10rem]"
+              >
+                <ShoppingBag className="size-4" />
+                {purchaseBlocked ? t("soldOut") : t("buy")}
+              </Button>
             )}
           </div>
 
-          <div className="mt-6">
-            <Accordion defaultValue={["description"]}>
-              <AccordionItem value="description">
-                <AccordionTrigger>{t("description")}</AccordionTrigger>
-                <AccordionContent>
-                  <div className="max-h-40 overflow-y-auto pr-1 text-sm leading-relaxed text-muted-foreground">
-                    {localizedProductDescription(product)}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-
-          {/* Trashed product: read-only archive view — no buy / wishlist / variant picks */}
           {!discontinued && (
             <>
-          <div className="mt-8">
-            <p className="mb-3 text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
-              {t("color")}
-              {activeColor ? (
-                <span className="ml-2 normal-case tracking-normal text-foreground">
-                  {localizedColorName(activeColor)}
-                </span>
-              ) : null}
-            </p>
-            <div className="flex flex-wrap gap-2.5">
-              {product.colors.map((c) => {
-                const available = colorHasAnyStock(c.id);
-                const selected = (colorId || product.colors[0].id) === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    title={
-                      available
-                        ? localizedColorName(c)
-                        : `${localizedColorName(c)} — ${t("colorUnavailable")}`
-                    }
-                    aria-label={localizedColorName(c)}
-                    aria-pressed={selected}
-                    aria-disabled={!available}
-                    disabled={!available}
-                    onClick={() => selectColor(c.id)}
-                    className={cn(
-                      "relative size-9 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.18)] transition",
-                      selected && available ? "border-ink" : "border-black/25",
-                      !available && "cursor-not-allowed opacity-35 grayscale"
-                    )}
-                    style={{ backgroundColor: c.hex }}
-                  >
-                    {!available && (
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <span className="block h-px w-[120%] rotate-45 bg-ink/80" />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            {product.colors.some((c) => !colorHasAnyStock(c.id)) &&
-              product.colors.some((c) => colorHasAnyStock(c.id)) && (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  {t("unavailableHint")}
+              <div className="mt-8">
+                <p className="mb-3 text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
+                  {t("color")}
+                  {activeColor ? (
+                    <span className="ml-2 normal-case tracking-normal text-foreground">
+                      {localizedColorName(activeColor)}
+                    </span>
+                  ) : null}
                 </p>
-              )}
-          </div>
-
-          <div className="mt-7">
-            <p className="mb-3 text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
-              {t("size")}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {product.sizes.map((s) => {
-                const sStock = activeColor
-                  ? stockFor(product.inventory, activeColor.id, s)
-                  : 0;
-                const selected = (size || product.sizes[0]) === s;
-                const unavailable = sStock === 0;
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    disabled={unavailable}
-                    title={
-                      unavailable
-                        ? `${s} — ${t("sizeUnavailable")}`
-                        : s
-                    }
-                    onClick={() => setSize(s)}
-                    className={cn(
-                      "flex size-11 items-center justify-center border text-sm transition",
-                      selected && !unavailable
-                        ? "border-ink bg-ink text-mist"
-                        : "border-border bg-white hover:border-ink/40",
-                      unavailable &&
-                        "cursor-not-allowed bg-[#f3f2ef] text-muted-foreground line-through opacity-50"
-                    )}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-8 space-y-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <p
-                className={cn(
-                  "text-sm font-medium",
-                  !purchaseBlocked ? "text-emerald-700" : "text-destructive"
-                )}
-              >
-                {!anyStock
-                  ? t("allSoldOut")
-                  : stock > 0
-                    ? t("inStockShort")
-                    : t("outOfStockShort")}
-              </p>
-              {stock > 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  {t("inStock", {
-                    stock,
-                    color: activeColor ? localizedColorName(activeColor) : "",
-                    size: activeSize ?? "",
+                <div className="flex flex-wrap gap-2.5">
+                  {product.colors.map((c) => {
+                    const available = colorHasAnyStock(c.id);
+                    const selected = (colorId || product.colors[0].id) === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        title={
+                          available
+                            ? localizedColorName(c)
+                            : `${localizedColorName(c)} — ${t("colorUnavailable")}`
+                        }
+                        aria-label={localizedColorName(c)}
+                        aria-pressed={selected}
+                        aria-disabled={!available}
+                        disabled={!available}
+                        onClick={() => selectColor(c.id)}
+                        className={cn(
+                          "relative size-9 rounded-full border-2 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.18)] transition",
+                          selected && available ? "border-ink" : "border-black/25",
+                          !available && "cursor-not-allowed opacity-35 grayscale"
+                        )}
+                        style={{ backgroundColor: c.hex }}
+                      >
+                        {!available && (
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span className="block h-px w-[120%] rotate-45 bg-ink/80" />
+                          </span>
+                        )}
+                      </button>
+                    );
                   })}
-                </p>
-              ) : (
-                <p className="text-xs font-medium text-destructive">
-                  {t("outOfStock", {
-                    color: activeColor ? localizedColorName(activeColor) : "",
-                    size: activeSize ?? "",
+                </div>
+                {product.colors.some((c) => !colorHasAnyStock(c.id)) &&
+                  product.colors.some((c) => colorHasAnyStock(c.id)) && (
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {t("unavailableHint")}
+                    </p>
+                  )}
+              </div>
+
+              <div className="mt-7">
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
+                    {t("size")}
+                  </p>
+                  {product.sizeChart && (
+                    <a
+                      href="#size-guide"
+                      className="text-[11px] text-foreground underline underline-offset-2"
+                    >
+                      {t("sizeGuide")}
+                    </a>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((s) => {
+                    const sStock = activeColor
+                      ? stockFor(product.inventory, activeColor.id, s)
+                      : 0;
+                    const selected = (size || product.sizes[0]) === s;
+                    const unavailable = sStock === 0;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        disabled={unavailable}
+                        title={
+                          unavailable
+                            ? `${s} — ${t("sizeUnavailable")}`
+                            : s
+                        }
+                        onClick={() => setSize(s)}
+                        className={cn(
+                          "flex size-11 items-center justify-center border text-sm transition",
+                          selected && !unavailable
+                            ? "border-ink bg-ink text-mist"
+                            : "border-border bg-white hover:border-ink/40",
+                          unavailable &&
+                            "cursor-not-allowed bg-[#f3f2ef] text-muted-foreground line-through opacity-50"
+                        )}
+                      >
+                        {s}
+                      </button>
+                    );
                   })}
-                </p>
+                </div>
+              </div>
+
+              {descParagraphs.length > 0 && (
+                <div className="mt-8 space-y-3 border-t border-border pt-8">
+                  <p className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
+                    {t("description")}
+                  </p>
+                  {descParagraphs.map((para) => (
+                    <p
+                      key={para.slice(0, 48)}
+                      className="text-sm leading-relaxed text-foreground/85"
+                    >
+                      {para}
+                    </p>
+                  ))}
+                </div>
               )}
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              size="lg"
-              onClick={handleAdd}
-              disabled={purchaseBlocked}
-              className="w-full bg-[#c41e3a] tracking-[0.12em] uppercase hover:bg-[#a81830] disabled:bg-ink/30 sm:min-w-[12rem] sm:flex-1"
-            >
-              <ShoppingBag className="size-4" />
-              {purchaseBlocked ? t("soldOut") : t("buy")}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full bg-white sm:w-auto"
-              onClick={async () => {
-                try {
-                  const next = await toggleWishlist(product.id);
-                  toast.success(
-                    next ? t("addedWishlist") : t("removedWishlist")
-                  );
-                } catch {
-                  toast.error(t("wishlistError"));
-                }
-              }}
-            >
-              <Heart
-                className={cn("size-4", wished && "fill-current text-destructive")}
-              />
-              {t("wishlist")}
-            </Button>
-            </div>
-          </div>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:hidden">
+                <Button
+                  size="lg"
+                  onClick={handleAdd}
+                  disabled={purchaseBlocked}
+                  className="w-full bg-[#c41e3a] tracking-[0.12em] uppercase hover:bg-[#a81830] disabled:bg-ink/30"
+                >
+                  <ShoppingBag className="size-4" />
+                  {purchaseBlocked ? t("soldOut") : t("buy")}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full bg-white"
+                  onClick={async () => {
+                    try {
+                      const next = await toggleWishlist(product.id);
+                      toast.success(
+                        next ? t("addedWishlist") : t("removedWishlist")
+                      );
+                    } catch {
+                      toast.error(t("wishlistError"));
+                    }
+                  }}
+                >
+                  <Heart
+                    className={cn(
+                      "size-4",
+                      wished && "fill-current text-destructive"
+                    )}
+                  />
+                  {t("wishlist")}
+                </Button>
+              </div>
+
+              <div className="mt-4 hidden md:block">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="bg-white"
+                  onClick={async () => {
+                    try {
+                      const next = await toggleWishlist(product.id);
+                      toast.success(
+                        next ? t("addedWishlist") : t("removedWishlist")
+                      );
+                    } catch {
+                      toast.error(t("wishlistError"));
+                    }
+                  }}
+                >
+                  <Heart
+                    className={cn(
+                      "size-4",
+                      wished && "fill-current text-destructive"
+                    )}
+                  />
+                  {t("wishlist")}
+                </Button>
+              </div>
             </>
           )}
 
-          <div className="mt-10 space-y-6 border-t border-border pt-8">
-            <div>
-              <p className="mb-3 text-sm font-semibold">{t("details")}</p>
-              <ul className="space-y-2.5 text-sm leading-relaxed text-foreground/80">
-                {localizedProductDetails(product).map((d) => (
-                  <li key={d} className="flex gap-3">
-                    <span className="mt-1.5 size-1.5 shrink-0 bg-[#c41e3a]" />
-                    <span>{d}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
+          <div className="mt-8 space-y-4 border-t border-border pt-8">
             <Accordion>
+              {otherDetails.length > 0 && (
+                <AccordionItem value="details">
+                  <AccordionTrigger>{t("details")}</AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="space-y-2.5 text-sm leading-relaxed text-foreground/80">
+                      {otherDetails.map((d) => (
+                        <li key={d} className="flex gap-3">
+                          <span className="mt-1.5 size-1.5 shrink-0 bg-[#c41e3a]" />
+                          <span>{d}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+              {(careLines.length > 0 || otherDetails.length === 0) && (
+                <AccordionItem value="care">
+                  <AccordionTrigger>{t("care")}</AccordionTrigger>
+                  <AccordionContent>
+                    {careLines.length > 0 ? (
+                      <ul className="space-y-2 text-sm leading-relaxed text-muted-foreground">
+                        {careLines.map((d) => (
+                          <li key={d}>{d}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {tNav("delivery")} — blanco
+                      </p>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              )}
               {product.sizeChart && (
                 <AccordionItem value="size" className="scroll-mt-24" id="size-guide">
                   <AccordionTrigger>{t("sizeGuide")}</AccordionTrigger>
@@ -466,21 +541,14 @@ export default function ProductPage({
                   </AccordionContent>
                 </AccordionItem>
               )}
-              <AccordionItem value="returns">
-                <AccordionTrigger>{tNav("delivery")}</AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-sm text-muted-foreground">
-                    Нова Пошта · 1–3 дні. Повернення протягом 14 днів.{" "}
-                    <Link
-                      href="/returns"
-                      className="text-foreground underline underline-offset-2"
-                    >
-                      Детальніше
-                    </Link>
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
             </Accordion>
+
+            <Link
+              href="/returns#zayavka"
+              className="inline-flex text-sm font-medium text-foreground underline underline-offset-4 hover:opacity-70"
+            >
+              {t("returnCta")}
+            </Link>
           </div>
         </div>
       </div>

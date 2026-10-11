@@ -92,6 +92,7 @@ export type Order = {
     city: string;
     address: string;
     novaPoshta?: string;
+    novaPoshtaTtn?: string;
   };
   userId?: string;
 };

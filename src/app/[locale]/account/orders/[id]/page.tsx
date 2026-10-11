@@ -171,6 +171,18 @@ export default function OrderDetailPage({
           <span>{formatUAH(order.total)}</span>
         </div>
       </div>
+
+      <div className="mt-8">
+        <Button
+          variant="outline"
+          className="w-full bg-white sm:w-auto"
+          render={
+            <Link href={`/returns?order=${encodeURIComponent(order.id)}#zayavka`} />
+          }
+        >
+          {t("returnRequest")}
+        </Button>
+      </div>
     </div>
   );
 }

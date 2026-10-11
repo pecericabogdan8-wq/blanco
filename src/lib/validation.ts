@@ -38,3 +38,12 @@ export const supportSchema = z.object({
   email: z.string().trim().email().max(254),
   message: z.string().trim().min(3).max(4000),
 });
+
+export const returnRequestSchema = z.object({
+  orderId: z.string().trim().min(1).max(64),
+  email: z.string().trim().email().max(254),
+  phone: z.string().trim().max(32).optional(),
+  reason: z.enum(["defective", "quality_dislike", "wrong_size", "other"]),
+  message: z.string().trim().min(3).max(4000),
+  refundWanted: z.boolean().optional(),
+});

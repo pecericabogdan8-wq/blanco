@@ -1,0 +1,678 @@
+{
+  "products": [
+    {
+      "id": "p-lobanovskyi",
+      "slug": "lobanovskyi-knitted-sweater",
+      "sku": "BL-SW-651442",
+      "name": "Светр Лобановський",
+      "nameUk": "Светр Лобановський",
+      "category": "sweaters",
+      "description": "Синій в’язаний оверсайз-светр з портретом Валерія Лобановського.",
+      "descriptionUk": "Синій в’язаний оверсайз-светр з портретом Валерія Лобановського.",
+      "details": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 3000,
+      "salePrice": null,
+      "figure": "Валерій Лобановський",
+      "figureUk": "Валерій Лобановський",
+      "featured": true,
+      "newArrival": true,
+      "tags": [
+        "лобановський",
+        "lobanovskyi",
+        "портрет"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "60",
+          "width": "58"
+        },
+        {
+          "size": "M",
+          "length": "66",
+          "width": "64"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "68"
+        }
+      ],
+      "images": [
+        "/products/galleries/lobanovskyi/01.jpg"
+      ],
+      "colors": [
+        {
+          "id": "blue",
+          "name": "Синій",
+          "nameUk": "Синій",
+          "hex": "#1E3A5F"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "inventory": {
+        "blue:L": 0,
+        "blue:M": 1,
+        "blue:S": 1
+      }
+    },
+    {
+      "id": "p-kostenko",
+      "slug": "kostenko-knitted-sweater",
+      "sku": null,
+      "name": "Светр Костенко",
+      "nameUk": "Светр Костенко",
+      "category": "sweaters",
+      "description": "Чорний в’язаний светр з білою обводкою портрета Ліни Костенко.",
+      "descriptionUk": "Чорний в’язаний светр з білою обводкою портрета Ліни Костенко.",
+      "details": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 3000,
+      "salePrice": null,
+      "figure": "Ліна Костенко",
+      "figureUk": "Ліна Костенко",
+      "featured": true,
+      "newArrival": true,
+      "tags": [
+        "костенко",
+        "kostenko",
+        "портрет"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "60",
+          "width": "58"
+        },
+        {
+          "size": "M",
+          "length": "66",
+          "width": "64"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "68"
+        }
+      ],
+      "images": [
+        "/products/galleries/kostenko/04.jpg",
+        "/products/galleries/kostenko/01.jpg",
+        "/products/galleries/kostenko/14.jpg",
+        "/products/galleries/kostenko/13.jpg",
+        "/products/galleries/kostenko/16.jpg",
+        "/products/galleries/kostenko/15.jpg"
+      ],
+      "colors": [
+        {
+          "id": "black",
+          "name": "Чорний",
+          "nameUk": "Чорний",
+          "hex": "#111111"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "inventory": {
+        "black:L": 6,
+        "black:M": 6,
+        "black:S": 6
+      }
+    },
+    {
+      "id": "p-chornovil",
+      "slug": "chornovil-knitted-sweater",
+      "sku": null,
+      "name": "Светр Чорновіл",
+      "nameUk": "Светр Чорновіл",
+      "category": "sweaters",
+      "description": "Червоний в’язаний оверсайз-светр з портретом В’ячеслава Чорновола.",
+      "descriptionUk": "Червоний в’язаний оверсайз-светр з портретом В’ячеслава Чорновола.",
+      "details": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 3000,
+      "salePrice": null,
+      "figure": "В’ячеслав Чорновіл",
+      "figureUk": "В’ячеслав Чорновіл",
+      "featured": true,
+      "newArrival": false,
+      "tags": [
+        "чорновіл",
+        "chornovil",
+        "портрет"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "60",
+          "width": "58"
+        },
+        {
+          "size": "M",
+          "length": "66",
+          "width": "64"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "68"
+        }
+      ],
+      "images": [
+        "/products/galleries/chornovil/01.jpg",
+        "/products/galleries/chornovil/02.jpg",
+        "/products/galleries/chornovil/03.jpg",
+        "/products/galleries/chornovil/05.jpg",
+        "/products/galleries/chornovil/11.jpg"
+      ],
+      "colors": [
+        {
+          "id": "burgundy",
+          "name": "Бордо",
+          "nameUk": "Бордо",
+          "hex": "#6B2430"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "inventory": {
+        "burgundy:L": 6,
+        "burgundy:M": 6,
+        "burgundy:S": 6
+      }
+    },
+    {
+      "id": "p-volya-scarf",
+      "slug": "freedom-scarf",
+      "sku": null,
+      "name": "Шарф Воля",
+      "nameUk": "Шарф Воля",
+      "category": "scarves",
+      "description": "В’язаний шарф «ВОЛЯ» з чорною графікою на світлому тлі. Теплий акцент колекції.",
+      "descriptionUk": "В’язаний шарф «ВОЛЯ» з чорною графікою на світлому тлі. Теплий акцент колекції.",
+      "details": [
+        "В’язаний аксесуар",
+        "Принт «ВОЛЯ» та іконки",
+        "Один розмір",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний аксесуар",
+        "Принт «ВОЛЯ» та іконки",
+        "Один розмір",
+        "Зроблено в Україні"
+      ],
+      "price": 1200,
+      "salePrice": null,
+      "figure": null,
+      "figureUk": null,
+      "featured": true,
+      "newArrival": false,
+      "tags": [
+        "воля",
+        "freedom",
+        "шарф",
+        "scarf"
+      ],
+      "sizeChart": null,
+      "images": [
+        "/products/galleries/freedom-scarf/01.jpg",
+        "/products/galleries/freedom-scarf/02.jpg"
+      ],
+      "colors": [
+        {
+          "id": "bone",
+          "name": "Молочний",
+          "nameUk": "Молочний",
+          "hex": "#E8E4DC"
+        }
+      ],
+      "sizes": [
+        "ONE"
+      ],
+      "inventory": {
+        "bone:ONE": 20
+      }
+    },
+    {
+      "id": "p-kuzma-tee",
+      "slug": "kuzma-skryabin-tee",
+      "sku": null,
+      "name": "Футболка Кузьма Скрябін",
+      "nameUk": "Футболка Кузьма Скрябін",
+      "category": "tshirts",
+      "description": "Оверсайз-футболка з графікою KUZMA / Скрябін. На спині — текст у рукописному стилі.",
+      "descriptionUk": "Оверсайз-футболка з графікою KUZMA / Скрябін. На спині — текст у рукописному стилі.",
+      "details": [
+        "Оверсайз крій",
+        "100% бавовна · щільність ~200 г/м²",
+        "Друк DTF · washed-ефект",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "Оверсайз крій",
+        "100% бавовна · щільність ~200 г/м²",
+        "Друк DTF · washed-ефект",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 1999,
+      "salePrice": 1699,
+      "figure": "Кузьма Скрябін",
+      "figureUk": "Кузьма Скрябін",
+      "featured": false,
+      "newArrival": true,
+      "tags": [
+        "кузьма",
+        "футболка",
+        "tee",
+        "скрябін"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "66",
+          "width": "56"
+        },
+        {
+          "size": "M",
+          "length": "68",
+          "width": "60"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "64"
+        },
+        {
+          "size": "XL",
+          "length": "72",
+          "width": "66"
+        }
+      ],
+      "images": [
+        "/products/galleries/kuzma-tee/01.jpg",
+        "/products/galleries/kuzma-tee/05.jpg",
+        "/products/galleries/kuzma-tee/06.jpg",
+        "/products/galleries/kuzma-tee/14.jpg",
+        "/products/galleries/kuzma-tee/13.jpg",
+        "/products/galleries/kuzma-tee/07.jpg",
+        "/products/galleries/kuzma-tee/08.jpg",
+        "/products/galleries/kuzma-tee/09.jpg",
+        "/products/galleries/kuzma-tee/10.jpg",
+        "/products/galleries/kuzma-tee/12.jpg",
+        "/products/galleries/kuzma-tee/11.jpg"
+      ],
+      "colors": [
+        {
+          "id": "black",
+          "name": "Чорний",
+          "nameUk": "Чорний",
+          "hex": "#111111"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "inventory": {
+        "black:L": 12,
+        "black:M": 12,
+        "black:S": 12,
+        "black:XL": 12
+      }
+    },
+    {
+      "id": "p-lesya",
+      "slug": "lesya-ukrainka-knitted-sweater",
+      "sku": null,
+      "name": "Светр Леся Українка",
+      "nameUk": "Светр Леся Українка",
+      "category": "sweaters",
+      "description": "Кораловий в’язаний светр з портретом Лесі Українки. На спині — «Щоб не плакать, я сміялась.»",
+      "descriptionUk": "Кораловий в’язаний светр з портретом Лесі Українки. На спині — «Щоб не плакать, я сміялась.»",
+      "details": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 3000,
+      "salePrice": null,
+      "figure": "Леся Українка",
+      "figureUk": "Леся Українка",
+      "featured": true,
+      "newArrival": false,
+      "tags": [
+        "леся",
+        "lesya",
+        "портрет"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "60",
+          "width": "58"
+        },
+        {
+          "size": "M",
+          "length": "66",
+          "width": "64"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "68"
+        }
+      ],
+      "images": [
+        "/products/galleries/lesya/01.jpg",
+        "/products/galleries/lesya/02.jpg",
+        "/products/galleries/lesya/03.jpg",
+        "/products/galleries/lesya/04.jpg"
+      ],
+      "colors": [
+        {
+          "id": "coral",
+          "name": "Корал",
+          "nameUk": "Корал",
+          "hex": "#D4786A"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "inventory": {
+        "coral:L": 7,
+        "coral:M": 7,
+        "coral:S": 7
+      }
+    },
+    {
+      "id": "p-kuzma",
+      "slug": "kuzma-knitted-sweater",
+      "sku": null,
+      "name": "Светр Кузьма",
+      "nameUk": "Светр Кузьма",
+      "category": "sweaters",
+      "description": "Чорний в’язаний светр з портретом Кузьми — червона обводка в графіці.",
+      "descriptionUk": "Чорний в’язаний светр з портретом Кузьми — червона обводка в графіці.",
+      "details": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 3000,
+      "salePrice": null,
+      "figure": "Кузьма Скрябін",
+      "figureUk": "Кузьма Скрябін",
+      "featured": true,
+      "newArrival": true,
+      "tags": [
+        "кузьма",
+        "kuzma",
+        "скрябін",
+        "портрет"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "60",
+          "width": "58"
+        },
+        {
+          "size": "M",
+          "length": "66",
+          "width": "64"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "68"
+        }
+      ],
+      "images": [
+        "/products/galleries/kuzma/01.jpg",
+        "/products/galleries/kuzma/02.jpg"
+      ],
+      "colors": [
+        {
+          "id": "black",
+          "name": "Чорний",
+          "nameUk": "Чорний",
+          "hex": "#111111"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "inventory": {
+        "black:L": 8,
+        "black:M": 8,
+        "black:S": 8
+      }
+    },
+    {
+      "id": "p-stus",
+      "slug": "stus-knitted-sweater",
+      "sku": null,
+      "name": "Светр Стус",
+      "nameUk": "Светр Стус",
+      "category": "sweaters",
+      "description": "Светр з портретом Василя Стуса. На спині — «Терпи, терпи — терпець тебе шліфує».",
+      "descriptionUk": "Светр з портретом Василя Стуса. На спині — «Терпи, терпи — терпець тебе шліфує».",
+      "details": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 3000,
+      "salePrice": null,
+      "figure": "Василь Стус",
+      "figureUk": "Василь Стус",
+      "featured": true,
+      "newArrival": false,
+      "tags": [
+        "стус",
+        "stus",
+        "портрет"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "60",
+          "width": "58"
+        },
+        {
+          "size": "M",
+          "length": "66",
+          "width": "64"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "68"
+        }
+      ],
+      "images": [
+        "/products/galleries/stus/01.jpg",
+        "/products/galleries/stus/02.jpg",
+        "/products/galleries/stus/03.jpg",
+        "/products/galleries/stus/07.jpg",
+        "/products/galleries/stus/08.jpg",
+        "/products/galleries/stus/11.jpg",
+        "/products/galleries/stus/09.jpg",
+        "/products/galleries/stus/12.jpg",
+        "/products/galleries/stus/10.jpg",
+        "/products/galleries/stus/14.jpg",
+        "/products/galleries/stus/13.jpg"
+      ],
+      "colors": [
+        {
+          "id": "white",
+          "name": "Білий",
+          "nameUk": "Білий",
+          "hex": "#F5F5F2"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "inventory": {
+        "white:L": 9,
+        "white:M": 9,
+        "white:S": 9
+      }
+    },
+    {
+      "id": "p-shevchenko",
+      "slug": "shevchenko-knitted-sweater",
+      "sku": null,
+      "name": "Светр Шевченко",
+      "nameUk": "Светр Шевченко",
+      "category": "sweaters",
+      "description": "В’язаний оверсайз-светр з портретом Тараса Шевченка. На спині — рядки з «Думи мої…».",
+      "descriptionUk": "В’язаний оверсайз-светр з портретом Тараса Шевченка. На спині — рядки з «Думи мої…».",
+      "details": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "detailsUk": [
+        "В’язаний оверсайз-светр",
+        "Принт портрета спереду, текст ззаду",
+        "Прати при 30°C, вивернути навиворіт",
+        "Зроблено в Україні"
+      ],
+      "price": 3000,
+      "salePrice": null,
+      "figure": "Тарас Шевченко",
+      "figureUk": "Тарас Шевченко",
+      "featured": true,
+      "newArrival": true,
+      "tags": [
+        "шевченко",
+        "shevchenko",
+        "портрет",
+        "оверсайз"
+      ],
+      "sizeChart": [
+        {
+          "size": "S",
+          "length": "60",
+          "width": "58"
+        },
+        {
+          "size": "M",
+          "length": "66",
+          "width": "64"
+        },
+        {
+          "size": "L",
+          "length": "70",
+          "width": "68"
+        }
+      ],
+      "images": [
+        "/products/galleries/shevchenko/01.jpg",
+        "/products/galleries/shevchenko/04.jpg",
+        "/products/galleries/shevchenko/03.jpg",
+        "/products/galleries/shevchenko/11.jpg",
+        "/products/galleries/shevchenko/08.jpg",
+        "/products/galleries/shevchenko/09.jpg",
+        "/products/galleries/shevchenko/10.jpg",
+        "/products/galleries/shevchenko/13.jpg",
+        "/products/galleries/shevchenko/12.jpg"
+      ],
+      "colors": [
+        {
+          "id": "bone",
+          "name": "Молочний",
+          "nameUk": "Молочний",
+          "hex": "#E8E4DC"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "inventory": {
+        "bone:L": 10,
+        "bone:M": 10,
+        "bone:S": 10
+      }
+    }
+  ]
+}

@@ -11,6 +11,9 @@ gallery-build.log
 build-galleries.log
 share-url.txt
 share-tunnel.log
+BlancoPortfolio.pdf
 public/products/*.tmp.webp
 AgentStores
 .cursor
+prisma/dev.db
+prisma/dev.db-journal

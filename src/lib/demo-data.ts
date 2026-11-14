@@ -346,30 +346,63 @@ export const DEMO_REVIEWS: Review[] = [
   },
 ];
 
+/** Curated UGC-style grid until Instagram Graph token is connected */
 export const DEMO_MENTIONS: InstagramMention[] = [
   {
     id: "m1",
     handle: "@olia.k",
     caption: "Мій Шевченко на щодень",
     image: "/products/mentions-1.webp",
+    permalink: "https://www.instagram.com/blancoone/",
   },
   {
     id: "m2",
     handle: "@taras.fits",
     caption: "blancoone hit different",
     image: "/products/mentions-2.webp",
+    permalink: "https://www.instagram.com/blancoone/",
   },
   {
     id: "m3",
     handle: "@masha.ua",
     caption: "Стус у студії",
     image: "/products/mentions-3.webp",
+    permalink: "https://www.instagram.com/blancoone/",
   },
   {
     id: "m4",
     handle: "@street.kyiv",
     caption: "Локальний бренд, сильний вайб",
     image: "/products/mentions-4.webp",
+    permalink: "https://www.instagram.com/blancoone/",
+  },
+  {
+    id: "m5",
+    handle: "@blancoone",
+    caption: "Lookbook · при свічках",
+    image: "/products/galleries/lookbook/home-sweaters.jpg",
+    permalink: "https://www.instagram.com/blancoone/",
+  },
+  {
+    id: "m6",
+    handle: "@blancoone",
+    caption: "Команда · editorial",
+    image: "/products/galleries/lookbook/08.jpg",
+    permalink: "https://www.instagram.com/blancoone/",
+  },
+  {
+    id: "m7",
+    handle: "@blancoone",
+    caption: "Стіл · атмосфера",
+    image: "/products/galleries/lookbook/home-bottom.jpg",
+    permalink: "https://www.instagram.com/blancoone/",
+  },
+  {
+    id: "m8",
+    handle: "@blancoone",
+    caption: "Шарфи · деталі",
+    image: "/products/galleries/lookbook/home-scarves.jpg",
+    permalink: "https://www.instagram.com/blancoone/",
   },
 ];
 

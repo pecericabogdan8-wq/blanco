@@ -132,6 +132,7 @@ export type InstagramMention = {
   handle: string;
   caption: string;
   image: string;
+  permalink?: string;
 };
 
 export type SupportTicket = {

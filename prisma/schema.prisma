@@ -341,12 +341,16 @@ model SiteSetting {
 }
 
 model InstagramMention {
-  id        String  @id @default(cuid())
-  handle    String
-  caption   String
-  image     String
-  sortOrder Int     @default(0)
-  active    Boolean @default(true)
+  id         String  @id @default(cuid())
+  handle     String
+  caption    String
+  image      String
+  /// Direct Instagram post URL when known
+  permalink  String  @default("")
+  /// Instagram media id for Graph sync (dedupe)
+  externalId String? @unique
+  sortOrder  Int     @default(0)
+  active     Boolean @default(true)
 }
 
 /// Snapshot of a hard-deleted product for backend recovery / audit.
